@@ -1,0 +1,91 @@
+{
+  "name": "sat-xml-conversor",
+  "version": "1.0.0",
+  "description": "App para descargar XML del SAT y convertirlos a Excel",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder build --publish never",
+    "build:mac": "electron-builder build --mac --publish never",
+    "build:win": "electron-builder build --win --publish never",
+    "postinstall": "playwright install chromium",
+    "rebuild": "electron-rebuild -f -w better-sqlite3"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "exceljs": "^4.4.0",
+    "fast-xml-parser": "^4.5.0",
+    "playwright": "^1.60.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.xml-conversor.app",
+    "productName": "SAT XML Conversor",
+    "copyright": "Copyright © 2025",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "assets/**/*",
+      "node_modules/**/*",
+      "!node_modules/playwright-core/.local-browsers/**",
+      "!node_modules/playwright/.local-browsers/**"
+    ],
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**",
+      "node_modules/playwright/**",
+      "node_modules/playwright-core/**",
+      "node_modules/@fast-csv/**",
+      "node_modules/exceljs/**"
+    ],
+    "extraMetadata": {
+      "main": "main.js"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}",
+      "category": "public.app-category.finance",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "minimumSystemVersion": "10.15"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-win-x64.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": null,
+      "uninstallerIcon": null,
+      "installerHeaderIcon": null
+    },
+    "dmg": {
+      "title": "SAT XML Conversor",
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
+    },
+    "afterPack": null
+  },
+  "author": "SAT XML Conversor"
+}
