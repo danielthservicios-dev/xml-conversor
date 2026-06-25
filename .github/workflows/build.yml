@@ -34,7 +34,13 @@ jobs:
         with:
           node-version: 20
       - run: npm install
+      - name: Instalar Chromium para Playwright
+        run: npx playwright install chromium
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: 0
       - run: npm run build:win
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: 0
       - uses: actions/upload-artifact@v4
         with:
           name: SAT-XML-Conversor-Windows

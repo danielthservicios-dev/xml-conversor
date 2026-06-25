@@ -48,31 +48,14 @@ function createWindow() {
 }
 
 function ensurePlaywrightBrowsers() {
+  process.env.PLAYWRIGHT_BROWSERS_PATH = "0";
   const { chromium } = require("playwright");
   try {
     chromium.executablePath();
-    console.log("Chromium ya instalado");
+    console.log("Chromium ya disponible");
     return;
-  } catch {
-  }
-  console.log("Instalando Chromium para Playwright...");
-  const { execSync } = require("child_process");
-  const playwrightPath = path.dirname(require.resolve("playwright"));
-  try {
-    execSync(`node "${path.join(playwrightPath, "cli.mjs")}" install chromium`, {
-      stdio: "inherit",
-      timeout: 180000,
-    });
-  } catch {
-    try {
-      execSync("npx playwright install chromium", {
-        stdio: "inherit",
-        timeout: 180000,
-        cwd: app.getAppPath(),
-      });
-    } catch (e) {
-      console.error("No se pudo instalar Chromium:", e.message);
-    }
+  } catch (e) {
+    console.error("Chromium no encontrado:", e.message);
   }
 }
 

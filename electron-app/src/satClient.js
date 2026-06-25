@@ -20,6 +20,7 @@ class SATClient {
   }
 
   async _initBrowser() {
+    process.env.PLAYWRIGHT_BROWSERS_PATH = "0";
     this.browser = await chromium.launch({ headless: false });
     const context = await this.browser.newContext({
       acceptDownloads: true,

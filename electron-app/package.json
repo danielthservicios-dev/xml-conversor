@@ -36,9 +36,7 @@
       "preload.js",
       "src/**/*",
       "assets/**/*",
-      "node_modules/**/*",
-      "!node_modules/playwright-core/.local-browsers/**",
-      "!node_modules/playwright/.local-browsers/**"
+      "node_modules/**/*"
     ],
     "asarUnpack": [
       "node_modules/better-sqlite3/**",
