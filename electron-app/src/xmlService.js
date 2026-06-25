@@ -5,6 +5,7 @@ const ExcelJS = require("exceljs");
 
 const IMPIVA = "002";
 const IMPISR = "001";
+const IMPIEPS = "003";
 
 function findKey(obj, ...keys) {
   if (!obj) return null;
@@ -17,6 +18,16 @@ function findKey(obj, ...keys) {
 function safeArray(val) {
   if (!val) return [];
   return Array.isArray(val) ? val : [val];
+}
+
+function processTraslado(t) {
+  return {
+    impuesto: t["@_Impuesto"] || "",
+    tasa: parseFloat(t["@_TasaOCuota"] || "0"),
+    base: parseFloat(t["@_Base"] || "0"),
+    importe: parseFloat(t["@_Importe"] || "0"),
+    tipoFactor: t["@_TipoFactor"] || "",
+  };
 }
 
 function parseCFDI(filePath) {
@@ -69,58 +80,148 @@ function parseNormalCFDI(comprobante, filePath) {
     if (tfd) uuid = tfd["@_UUID"] || "";
   }
 
-  const conceptos = findKey(comprobante,
+  const conceptosNode = findKey(comprobante,
     "cfdi:Conceptos", "cfdi33:Conceptos", "cfdi40:Conceptos", "Conceptos"
   );
   let descripcion = "";
-  if (conceptos) {
-    const items = safeArray(findKey(conceptos,
-      "cfdi:Concepto", "cfdi33:Concepto", "cfdi40:Concepto", "Concepto"
-    ));
-    if (items.length > 0) {
-      descripcion = items[0]["@_Descripcion"] || "";
-    }
-  }
-
-  let ivaTrasladado = 0;
+  let baseIVA16 = 0, iva16 = 0;
+  let baseIVA8 = 0, iva8 = 0;
+  let iva0Base = 0;
+  let exentoBase = 0;
+  let baseIEPS = 0, ieps = 0;
+  let ivaTrasladadoSum = 0;
   let ivaRetenido = 0;
   let isrRetenido = 0;
+  let hasPerConceptoImpuestos = false;
 
-  const impuestos = findKey(comprobante,
-    "cfdi:Impuestos", "cfdi33:Impuestos", "cfdi40:Impuestos", "Impuestos"
-  );
-  if (impuestos) {
-    const traslados = findKey(impuestos,
-      "cfdi:Traslados", "cfdi33:Traslados", "cfdi40:Traslados", "Traslados"
-    );
-    if (traslados) {
-      for (const t of safeArray(findKey(traslados,
-        "cfdi:Traslado", "cfdi33:Traslado", "cfdi40:Traslado", "Traslado"
-      ))) {
-        if (t["@_Impuesto"] === IMPIVA) {
-          ivaTrasladado += parseFloat(t["@_Importe"] || "0");
+  if (conceptosNode) {
+    const items = safeArray(findKey(conceptosNode,
+      "cfdi:Concepto", "cfdi33:Concepto", "cfdi40:Concepto", "Concepto"
+    ));
+    const descs = [];
+    for (const item of items) {
+      if (item["@_Descripcion"]) descs.push(item["@_Descripcion"]);
+
+      const itemImpuestos = findKey(item,
+        "cfdi:Impuestos", "cfdi33:Impuestos", "cfdi40:Impuestos", "Impuestos"
+      );
+      if (itemImpuestos) {
+        hasPerConceptoImpuestos = true;
+        const traslados = findKey(itemImpuestos,
+          "cfdi:Traslados", "cfdi33:Traslados", "cfdi40:Traslados", "Traslados"
+        );
+        if (traslados) {
+          for (const t of safeArray(findKey(traslados,
+            "cfdi:Traslado", "cfdi33:Traslado", "cfdi40:Traslado", "Traslado"
+          ))) {
+            const { impuesto, tasa, base, importe, tipoFactor } = processTraslado(t);
+            if (impuesto === IMPIVA) {
+              ivaTrasladadoSum += importe;
+              if (tipoFactor === "Exento") {
+                exentoBase += base;
+              } else if (Math.abs(tasa - 0.16) < 0.001) {
+                iva16 += importe;
+                baseIVA16 += base;
+              } else if (Math.abs(tasa - 0.08) < 0.001) {
+                iva8 += importe;
+                baseIVA8 += base;
+              } else if (Math.abs(tasa) < 0.001) {
+                iva0Base += base;
+              } else {
+                iva16 += importe;
+                baseIVA16 += base;
+              }
+            } else if (impuesto === IMPIEPS) {
+              ieps += importe;
+              baseIEPS += base;
+            }
+          }
+        }
+
+        const retenciones = findKey(itemImpuestos,
+          "cfdi:Retenciones", "cfdi33:Retenciones", "cfdi40:Retenciones", "Retenciones"
+        );
+        if (retenciones) {
+          for (const r of safeArray(findKey(retenciones,
+            "cfdi:Retencion", "cfdi33:Retencion", "cfdi40:Retencion", "Retencion"
+          ))) {
+            const imp = r["@_Impuesto"] || "";
+            const impo = parseFloat(r["@_Importe"] || "0");
+            if (imp === IMPIVA) ivaRetenido += impo;
+            else if (imp === IMPISR) isrRetenido += impo;
+          }
         }
       }
     }
+    descripcion = descs.join("; ");
+  }
 
-    const retenciones = findKey(impuestos,
-      "cfdi:Retenciones", "cfdi33:Retenciones", "cfdi40:Retenciones", "Retenciones"
+  if (!hasPerConceptoImpuestos) {
+    const impuestos = findKey(comprobante,
+      "cfdi:Impuestos", "cfdi33:Impuestos", "cfdi40:Impuestos", "Impuestos"
     );
-    if (retenciones) {
-      for (const r of safeArray(findKey(retenciones,
-        "cfdi:Retencion", "cfdi33:Retencion", "cfdi40:Retencion", "Retencion"
-      ))) {
-        const imp = r["@_Impuesto"] || "";
-        const impo = parseFloat(r["@_Importe"] || "0");
-        if (imp === IMPIVA) ivaRetenido += impo;
-        else if (imp === IMPISR) isrRetenido += impo;
+    if (impuestos) {
+      const traslados = findKey(impuestos,
+        "cfdi:Traslados", "cfdi33:Traslados", "cfdi40:Traslados", "Traslados"
+      );
+      if (traslados) {
+        for (const t of safeArray(findKey(traslados,
+          "cfdi:Traslado", "cfdi33:Traslado", "cfdi40:Traslado", "Traslado"
+        ))) {
+          const { impuesto, tasa, base, importe } = processTraslado(t);
+          if (impuesto === IMPIVA) {
+            ivaTrasladadoSum += importe;
+            if (Math.abs(tasa - 0.16) < 0.001) {
+              iva16 += importe;
+              baseIVA16 += base;
+            } else if (Math.abs(tasa - 0.08) < 0.001) {
+              iva8 += importe;
+              baseIVA8 += base;
+            } else if (Math.abs(tasa) < 0.001) {
+              iva0Base += base;
+            } else {
+              iva16 += importe;
+              baseIVA16 += base;
+            }
+          } else if (impuesto === IMPIEPS) {
+            ieps += importe;
+            baseIEPS += base;
+          }
+        }
       }
+
+      const retenciones = findKey(impuestos,
+        "cfdi:Retenciones", "cfdi33:Retenciones", "cfdi40:Retenciones", "Retenciones"
+      );
+      if (retenciones) {
+        for (const r of safeArray(findKey(retenciones,
+          "cfdi:Retencion", "cfdi33:Retencion", "cfdi40:Retencion", "Retencion"
+        ))) {
+          const imp = r["@_Impuesto"] || "";
+          const impo = parseFloat(r["@_Importe"] || "0");
+          if (imp === IMPIVA) ivaRetenido += impo;
+          else if (imp === IMPISR) isrRetenido += impo;
+        }
+      }
+    }
+  }
+
+  let cfdiRelEg = "";
+  if (comprobante["@_TipoDeComprobante"] === "E") {
+    const relacionados = findKey(comprobante,
+      "cfdi:CfdiRelacionados", "cfdi33:CfdiRelacionados", "cfdi40:CfdiRelacionados", "CfdiRelacionados"
+    );
+    if (relacionados) {
+      const relList = safeArray(findKey(relacionados,
+        "cfdi:CfdiRelacionado", "cfdi33:CfdiRelacionado", "cfdi40:CfdiRelacionado", "CfdiRelacionado"
+      ));
+      cfdiRelEg = relList.map(r => r["@_UUID"] || "").filter(Boolean).join("; ");
     }
   }
 
   const subtotal = parseFloat(comprobante["@_SubTotal"] || "0");
-  const descuento = parseFloat(comprobante["@_Descuento"] || "0");
-  const subtotalReal = subtotal - descuento;
+  const descuentoVal = parseFloat(comprobante["@_Descuento"] || "0");
+  const subtotalReal = subtotal - descuentoVal;
 
   return {
     archivo: filePath,
@@ -140,18 +241,26 @@ function parseNormalCFDI(comprobante, filePath) {
     descripcion,
     regimen: emisor["@_RegimenFiscal"] || "",
     subtotal,
-    descuento,
+    descuento: descuentoVal,
     subtotalReal,
-    iva: ivaTrasladado,
+    baseIVA16, iva16,
+    baseIVA8, iva8,
+    iva0Base,
+    exentoBase,
+    baseIEPS, ieps,
     importeRetIva: ivaRetenido,
     importeRetISR: isrRetenido,
     total: parseFloat(comprobante["@_Total"] || "0"),
+    moneda: comprobante["@_Moneda"] || "",
+    tipoCambio: comprobante["@_TipoCambio"] || "",
+    exportacion: comprobante["@_Exportacion"] || "",
+    lugarExpedicion: comprobante["@_LugarExpedicion"] || "",
     tipo2: "",
     poliza: "",
     observaciones: "",
     comFechaPago: "",
     compFormaPago: "",
-    cfdiRelEg: "",
+    cfdiRelEg,
     cfdiRelPag: "",
     cp: receptor["@_DomicilioFiscalReceptor"] || receptor["@_CP"] || "",
     monedaP: "",
@@ -214,7 +323,10 @@ function parsePagoCFDI(comprobante, filePath) {
     for (const docto of doctos) {
       const idDocumento = docto["@_IdDocumento"] || "";
 
-      let ivaDR = 0;
+      let drBaseIVA16 = 0, drIVA16 = 0;
+      let drBaseIVA8 = 0, drIVA8 = 0;
+      let drBaseIEPS = 0, drIEPS = 0;
+
       const impuestosDR = findKey(docto,
         "pago20:ImpuestosDR", "pago10:ImpuestosDR", "ImpuestosDR"
       );
@@ -223,11 +335,28 @@ function parsePagoCFDI(comprobante, filePath) {
           "pago20:TrasladosDR", "pago10:TrasladosDR", "TrasladosDR"
         );
         if (trasladosDR) {
-          const trasladoDR = safeArray(findKey(trasladosDR,
+          for (const tdr of safeArray(findKey(trasladosDR,
             "pago20:TrasladoDR", "pago10:TrasladoDR", "TrasladoDR"
-          ));
-          if (trasladoDR.length > 0) {
-            ivaDR = parseFloat(trasladoDR[0]["@_ImporteDR"] || "0");
+          ))) {
+            const impuesto = tdr["@_ImpuestoDR"] || tdr["@_Impuesto"] || "";
+            const base = parseFloat(tdr["@_BaseDR"] || tdr["@_Base"] || "0");
+            const importe = parseFloat(tdr["@_ImporteDR"] || tdr["@_Importe"] || "0");
+            const tasa = parseFloat(tdr["@_TasaOCuotaDR"] || tdr["@_TasaOCuota"] || "0");
+            if (impuesto === IMPIVA) {
+              if (Math.abs(tasa - 0.16) < 0.001) {
+                drIVA16 += importe;
+                drBaseIVA16 += base;
+              } else if (Math.abs(tasa - 0.08) < 0.001) {
+                drIVA8 += importe;
+                drBaseIVA8 += base;
+              } else {
+                drIVA16 += importe;
+                drBaseIVA16 += base;
+              }
+            } else if (impuesto === IMPIEPS) {
+              drIEPS += importe;
+              drBaseIEPS += base;
+            }
           }
         }
       }
@@ -252,10 +381,18 @@ function parsePagoCFDI(comprobante, filePath) {
         subtotal: montoTotalPagos,
         descuento: 0,
         subtotalReal: montoTotalPagos,
-        iva: ivaDR,
+        baseIVA16: drBaseIVA16, iva16: drIVA16,
+        baseIVA8: drBaseIVA8, iva8: drIVA8,
+        iva0Base: 0,
+        exentoBase: 0,
+        baseIEPS: drBaseIEPS, ieps: drIEPS,
         importeRetIva: 0,
         importeRetISR: 0,
         total: montoTotalPagos,
+        moneda: comprobante["@_Moneda"] || "",
+        tipoCambio: comprobante["@_TipoCambio"] || "",
+        exportacion: comprobante["@_Exportacion"] || "",
+        lugarExpedicion: comprobante["@_LugarExpedicion"] || "",
         tipo2: "",
         poliza: "",
         observaciones: "",
@@ -305,15 +442,34 @@ function parseFolder(folderPath) {
 // ─── Excel generation ──────────────────────────────────────────────
 
 const EXCEL_HEADERS = [
-  "Archivo", "Version", "Tipo", "Método", "FormaDePago", "UsoCFDI", "UUID",
+  "Archivo", "Version", "Tipo", "MetodoPago", "FormaPago", "UsoCFDI", "UUID",
   "Folio", "Serie", "Fecha", "RFCEmisor", "NombreEmisor", "RFCReceptor",
-  "NombreReceptor", "Descripción", "Régimen", "SubTotal", "Descuento",
-  "Subtotal Real", "IVA", "ImporteRetIva", "ImporteRetISR", "Total", "Tipo",
-  "Póliza", "Observaciones", "Com_FechaPago", "Comp_FormaPago", "CFDIRel_Eg",
-  "CFDIRel_Pag", "CP", "MonedaP", "TipoCambioP", "NumParcialidad",
-  "ImpSaldoAnt", "ImpPagado", "ImpSaldoInsoluto", "MonedaDR", "ObjetoImpDR",
-  "EquivalenciaDR",
+  "NombreReceptor", "Descripcion", "RegimenFiscal", "SubTotal", "Descuento",
+  "Subtotal Real", "BaseIVA16", "IVA16", "BaseIVA8", "IVA8", "IVA0",
+  "BaseExento", "BaseIEPS", "IEPS", "ImporteRetIVA", "ImporteRetISR",
+  "Total", "Moneda", "TipoCambio", "Exportacion", "LugarExpedicion",
+  "Tipo2", "Poliza", "Observaciones", "Com_FechaPago", "Comp_FormaPago",
+  "CFDIRel_Eg", "CFDIRel_Pag", "CP", "MonedaP", "TipoCambioP",
+  "NumParcialidad", "ImpSaldoAnt", "ImpPagado", "ImpSaldoInsoluto",
+  "MonedaDR", "ObjetoImpDR", "EquivalenciaDR",
 ];
+
+function rowValues(r) {
+  return [
+    r.archivo, r.version, r.tipo, r.metodo, r.formaPago, r.usoCFDI, r.uuid,
+    r.folio, r.serie, r.fecha, r.rfcEmisor, r.nombreEmisor, r.rfcReceptor,
+    r.nombreReceptor, r.descripcion, r.regimen, r.subtotal, r.descuento,
+    r.subtotalReal,
+    r.baseIVA16, r.iva16, r.baseIVA8, r.iva8, r.iva0Base,
+    r.exentoBase, r.baseIEPS, r.ieps,
+    r.importeRetIva, r.importeRetISR,
+    r.total, r.moneda, r.tipoCambio, r.exportacion, r.lugarExpedicion,
+    r.tipo2, r.poliza, r.observaciones, r.comFechaPago, r.compFormaPago,
+    r.cfdiRelEg, r.cfdiRelPag, r.cp, r.monedaP, r.tipoCambioP,
+    r.numParcialidad, r.impSaldoAnt, r.impPagado, r.impSaldoInsoluto,
+    r.monedaDR, r.objetoImpDR, r.equivalenciaDR,
+  ];
+}
 
 async function generateExcel(rows, outputPath) {
   const wb = new ExcelJS.Workbook();
@@ -328,38 +484,20 @@ async function generateExcel(rows, outputPath) {
   };
 
   for (const r of rows) {
-    ws.addRow([
-      r.archivo, r.version, r.tipo, r.metodo, r.formaPago, r.usoCFDI, r.uuid,
-      r.folio, r.serie, r.fecha, r.rfcEmisor, r.nombreEmisor, r.rfcReceptor,
-      r.nombreReceptor, r.descripcion, r.regimen, r.subtotal, r.descuento,
-      r.subtotalReal, r.iva, r.importeRetIva, r.importeRetISR, r.total, r.tipo2,
-      r.poliza, r.observaciones, r.comFechaPago, r.compFormaPago, r.cfdiRelEg,
-      r.cfdiRelPag, r.cp, r.monedaP, r.tipoCambioP, r.numParcialidad,
-      r.impSaldoAnt, r.impPagado, r.impSaldoInsoluto, r.monedaDR, r.objetoImpDR,
-      r.equivalenciaDR,
-    ]);
+    ws.addRow(rowValues(r));
   }
 
   ws.columns.forEach((col, i) => {
     let maxLen = EXCEL_HEADERS[i].length;
     for (const r of rows) {
-      const vals = [
-        r.archivo, r.version, r.tipo, r.metodo, r.formaPago, r.usoCFDI, r.uuid,
-        r.folio, r.serie, r.fecha, r.rfcEmisor, r.nombreEmisor, r.rfcReceptor,
-        r.nombreReceptor, r.descripcion, r.regimen, r.subtotal, r.descuento,
-        r.subtotalReal, r.iva, r.importeRetIva, r.importeRetISR, r.total, r.tipo2,
-        r.poliza, r.observaciones, r.comFechaPago, r.compFormaPago, r.cfdiRelEg,
-        r.cfdiRelPag, r.cp, r.monedaP, r.tipoCambioP, r.numParcialidad,
-        r.impSaldoAnt, r.impPagado, r.impSaldoInsoluto, r.monedaDR, r.objetoImpDR,
-        r.equivalenciaDR,
-      ];
+      const vals = rowValues(r);
       const val = String(vals[i] || "");
       maxLen = Math.max(maxLen, val.length);
     }
     col.width = Math.min(maxLen + 3, 50);
   });
 
-  const moneyColumns = [17, 18, 19, 20, 21, 22, 23, 35, 36, 37]; // 1-indexed
+  const moneyColumns = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 46, 47, 48];
   for (let i = 2; i <= rows.length + 1; i++) {
     for (const col of moneyColumns) {
       const cell = ws.getCell(i, col);

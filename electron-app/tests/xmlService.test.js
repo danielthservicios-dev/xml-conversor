@@ -64,11 +64,21 @@ describe("parseCFDI", () => {
     expect(row.usoCFDI).toBe("G01");
     expect(row.subtotal).toBe(200);
     expect(row.total).toBe(199.96);
-    expect(row.iva).toBe(0.16);
+    expect(row.baseIVA16).toBe(1);
+    expect(row.iva16).toBe(0.16);
+    expect(row.iva8).toBe(0);
+    expect(row.iva0Base).toBe(0);
+    expect(row.exentoBase).toBe(0);
+    expect(row.baseIEPS).toBe(0);
+    expect(row.ieps).toBe(0);
     expect(row.importeRetIva).toBe(0.10);
     expect(row.importeRetISR).toBe(0.10);
     expect(row.descuento).toBe(0);
     expect(row.subtotalReal).toBe(200);
+    expect(row.moneda).toBe("MXN");
+    expect(row.tipoCambio).toBe("");
+    expect(row.exportacion).toBe("01");
+    expect(row.lugarExpedicion).toBe("20000");
     expect(row.monedaDR).toBe("");
     expect(row.cfdiRelPag).toBe("");
   });
@@ -82,7 +92,8 @@ describe("parseCFDI", () => {
     expect(row.uuid).toBe("fd5c008b-3d30-4b9b-9920-a432678d4d9d");
     expect(row.rfcEmisor).toBe("EKU9003173C9");
     expect(row.subtotal).toBe(125);
-    expect(row.iva).toBe(0);
+    expect(row.exentoBase).toBe(125);
+    expect(row.iva16).toBe(0);
     expect(row.importeRetIva).toBe(0);
     expect(row.importeRetISR).toBe(0);
   });
@@ -96,7 +107,8 @@ describe("parseCFDI", () => {
     expect(row.uuid).toBe("6f3c2d5b-6661-4083-8835-4655089b07d7");
     expect(row.subtotal).toBe(200);
     expect(row.total).toBe(200);
-    expect(row.iva).toBe(0);
+    expect(row.iva0Base).toBe(200);
+    expect(row.iva16).toBe(0);
     expect(row.importeRetIva).toBe(0);
     expect(row.importeRetISR).toBe(0);
   });
@@ -110,7 +122,8 @@ describe("parseCFDI", () => {
     expect(row.uuid).toBe("ced14bc9-7620-4d45-898b-64ab20938de7");
     expect(row.subtotal).toBe(200);
     expect(row.total).toBe(199.80);
-    expect(row.iva).toBe(0);
+    expect(row.iva0Base).toBe(200);
+    expect(row.iva16).toBe(0);
     expect(row.importeRetIva).toBe(0.10);
     expect(row.importeRetISR).toBe(0.10);
   });
@@ -127,10 +140,34 @@ describe("parseCFDI", () => {
     expect(row.nombreEmisor).toBe("EMPRESA TEST SA DE CV");
     expect(row.subtotal).toBe(1000);
     expect(row.total).toBe(1160);
-    expect(row.iva).toBe(160);
+    expect(row.baseIVA16).toBe(1000);
+    expect(row.iva16).toBe(160);
     expect(row.metodo).toBe("PUE");
     expect(row.formaPago).toBe("01");
     expect(row.usoCFDI).toBe("G01");
+  });
+
+  test("parses CFDI with multiple conceptos and mixed IVA rates (factura_multi_concepto.xml)", () => {
+    const filePath = path.join(FIXTURES_DIR, "factura_multi_concepto.xml");
+    const rows = parseCFDI(filePath);
+    expect(rows).not.toBeNull();
+    expect(rows.length).toBe(1);
+    const row = rows[0];
+    expect(row.uuid).toBe("multi-concepto-0000-0000-000000000001");
+    expect(row.subtotal).toBe(1800);
+    expect(row.total).toBe(2000);
+    expect(row.descripcion).toBe("Producto A; Producto B; Producto C");
+    expect(row.baseIVA16).toBe(1000);
+    expect(row.iva16).toBe(160);
+    expect(row.baseIVA8).toBe(500);
+    expect(row.iva8).toBe(40);
+    expect(row.exentoBase).toBe(300);
+    expect(row.iva0Base).toBe(0);
+    expect(row.baseIEPS).toBe(0);
+    expect(row.ieps).toBe(0);
+    expect(row.moneda).toBe("MXN");
+    expect(row.exportacion).toBe("01");
+    expect(row.lugarExpedicion).toBe("20000");
   });
 
   test("parses payment CFDI (pago.xml) - Tipo P", () => {
@@ -151,7 +188,13 @@ describe("parseCFDI", () => {
     expect(row.impSaldoAnt).toBe(500);
     expect(row.impPagado).toBe(500);
     expect(row.impSaldoInsoluto).toBe(0);
-    expect(row.iva).toBe(80);
+    expect(row.baseIVA16).toBe(500);
+    expect(row.iva16).toBe(80);
+    expect(row.iva8).toBe(0);
+    expect(row.iva0Base).toBe(0);
+    expect(row.exentoBase).toBe(0);
+    expect(row.baseIEPS).toBe(0);
+    expect(row.ieps).toBe(0);
     expect(row.subtotal).toBe(500);
     expect(row.total).toBe(500);
   });
@@ -194,8 +237,12 @@ describe("parseCFDI", () => {
       "archivo", "version", "tipo", "metodo", "formaPago", "usoCFDI",
       "uuid", "folio", "serie", "fecha", "rfcEmisor", "nombreEmisor",
       "rfcReceptor", "nombreReceptor", "descripcion", "regimen",
-      "subtotal", "descuento", "subtotalReal", "iva", "importeRetIva",
-      "importeRetISR", "total", "tipo2", "poliza", "observaciones",
+      "subtotal", "descuento", "subtotalReal",
+      "baseIVA16", "iva16", "baseIVA8", "iva8", "iva0Base",
+      "exentoBase", "baseIEPS", "ieps",
+      "importeRetIva", "importeRetISR",
+      "total", "moneda", "tipoCambio", "exportacion", "lugarExpedicion",
+      "tipo2", "poliza", "observaciones",
       "comFechaPago", "compFormaPago", "cfdiRelEg", "cfdiRelPag", "cp",
       "monedaP", "tipoCambioP", "numParcialidad", "impSaldoAnt",
       "impPagado", "impSaldoInsoluto", "monedaDR", "objetoImpDR",
@@ -270,10 +317,10 @@ describe("generateExcel", () => {
     const ws = wb.getWorksheet("Facturas");
     expect(ws).toBeDefined();
     expect(ws.rowCount).toBe(2);
-    expect(ws.getRow(1).cellCount).toBe(40);
+    expect(ws.getRow(1).cellCount).toBe(51);
     expect(ws.getCell(1, 1).value).toBe("Archivo");
     expect(ws.getCell(1, 7).value).toBe("UUID");
-    expect(ws.getCell(1, 13).value).toBe("RFCReceptor");
+    expect(ws.getCell(1, 11).value).toBe("RFCEmisor");
 
     fs.unlinkSync(outputPath);
   });
