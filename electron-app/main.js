@@ -1,10 +1,32 @@
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, safeStorage } = require("electron");
 const path = require("path");
+const fs = require("fs");
 const { initDB, getDB } = require("./src/database");
 const { SATClient } = require("./src/satClient");
 const { parseFolder, generateExcel } = require("./src/xmlService");
 
 let mainWindow;
+let satClient = null;
+
+function encryptPassword(plaintext) {
+  if (!plaintext) return plaintext;
+  if (safeStorage.isEncryptionAvailable()) {
+    return "enc:" + safeStorage.encryptString(plaintext).toString("hex");
+  }
+  return plaintext;
+}
+
+function decryptPassword(stored) {
+  if (!stored) return "";
+  if (stored.startsWith("enc:")) {
+    if (safeStorage.isEncryptionAvailable()) {
+      return safeStorage.decryptString(Buffer.from(stored.slice(4), "hex"));
+    }
+    console.warn("safeStorage no disponible, usando password almacenado");
+    return stored;
+  }
+  return stored;
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -29,16 +51,29 @@ function ensurePlaywrightBrowsers() {
   const { chromium } = require("playwright");
   try {
     chromium.executablePath();
+    console.log("Chromium ya instalado");
     return;
   } catch {
-    // not installed, continue to install
   }
   console.log("Instalando Chromium para Playwright...");
   const { execSync } = require("child_process");
-  execSync("npx playwright install chromium", {
-    stdio: "inherit",
-    cwd: require("os").homedir(),
-  });
+  const playwrightPath = path.dirname(require.resolve("playwright"));
+  try {
+    execSync(`node "${path.join(playwrightPath, "cli.mjs")}" install chromium`, {
+      stdio: "inherit",
+      timeout: 180000,
+    });
+  } catch {
+    try {
+      execSync("npx playwright install chromium", {
+        stdio: "inherit",
+        timeout: 180000,
+        cwd: app.getAppPath(),
+      });
+    } catch (e) {
+      console.error("No se pudo instalar Chromium:", e.message);
+    }
+  }
 }
 
 app.whenReady().then(() => {
@@ -48,7 +83,12 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => {
+  if (satClient) satClient.close();
   if (process.platform !== "darwin") app.quit();
+});
+
+app.on("before-quit", () => {
+  if (satClient) satClient.close();
 });
 
 // ─── Client CRUD ────────────────────────────────────────────────────
@@ -60,7 +100,11 @@ ipcMain.handle("db:getAll", () => {
 
 ipcMain.handle("db:get", (_, id) => {
   const db = getDB();
-  return db.prepare("SELECT * FROM clientes WHERE id = ?").get(id);
+  const row = db.prepare("SELECT * FROM clientes WHERE id = ?").get(id);
+  if (row) {
+    row.password_llave = decryptPassword(row.password_llave);
+  }
+  return row;
 });
 
 ipcMain.handle("db:add", (_, data) => {
@@ -73,7 +117,7 @@ ipcMain.handle("db:add", (_, data) => {
     data.razon_social,
     data.ruta_cer,
     data.ruta_key,
-    data.password_llave,
+    encryptPassword(data.password_llave),
     data.ruta_descarga || ""
   );
   return true;
@@ -89,7 +133,7 @@ ipcMain.handle("db:update", (_, id, data) => {
     data.razon_social,
     data.ruta_cer,
     data.ruta_key,
-    data.password_llave,
+    encryptPassword(data.password_llave),
     data.ruta_descarga || "",
     id
   );
@@ -137,23 +181,49 @@ ipcMain.handle("dialog:selectFolderXML", async () => {
 // ─── SAT Download ────────────────────────────────────────────────────
 
 ipcMain.handle("sat:login", async (_, clienteId) => {
+  if (satClient) {
+    await satClient.close();
+    satClient = null;
+  }
+
   const db = getDB();
   const c = db.prepare("SELECT * FROM clientes WHERE id = ?").get(clienteId);
   if (!c) return { ok: false, msg: "Cliente no encontrado" };
 
-  const client = new SATClient(c.ruta_cer, c.ruta_key, c.password_llave);
-  const result = await client.login();
+  satClient = new SATClient(c.ruta_cer, c.ruta_key, decryptPassword(c.password_llave), (msg) => {
+    if (mainWindow) mainWindow.webContents.send("sat:log", msg);
+  });
+
+  const result = await satClient.login();
   return result;
 });
 
-ipcMain.handle("sat:downloadPeriodo", async (_, clienteId, year, month, tipo, downloadPath) => {
-  const db = getDB();
-  const c = db.prepare("SELECT * FROM clientes WHERE id = ?").get(clienteId);
-  if (!c) return { ok: false, msg: "Cliente no encontrado" };
+ipcMain.handle("sat:navigateEmitidas", async () => {
+  if (!satClient) return { ok: false, msg: "No hay sesión activa. Inicia sesión primero." };
+  return await satClient.navigateToEmitidas();
+});
 
-  const client = new SATClient(c.ruta_cer, c.ruta_key, c.password_llave);
-  const result = await client.downloadPeriodo(year, month, tipo, downloadPath);
-  return result;
+ipcMain.handle("sat:navigateRecibidas", async () => {
+  if (!satClient) return { ok: false, msg: "No hay sesión activa. Inicia sesión primero." };
+  return await satClient.navigateToRecibidas();
+});
+
+ipcMain.handle("sat:downloadPeriodo", async (_, year, month, tipo, downloadPath) => {
+  if (!satClient) return { ok: false, msg: "No hay sesión activa. Inicia sesión primero." };
+  return await satClient.downloadPeriodo(year, month, tipo, downloadPath);
+});
+
+ipcMain.handle("sat:retrieveDownloads", async (_, downloadPath) => {
+  if (!satClient) return { ok: false, msg: "No hay sesión activa." };
+  return await satClient.retrieveDownloads(downloadPath);
+});
+
+ipcMain.handle("sat:close", async () => {
+  if (satClient) {
+    await satClient.close();
+    satClient = null;
+  }
+  return { ok: true };
 });
 
 // ─── System ────────────────────────────────────────────────────
@@ -164,21 +234,24 @@ ipcMain.handle("sys:homeDir", () => {
 
 // ─── XML to Excel ────────────────────────────────────────────────────
 
-ipcMain.handle("xml:convertFolder", async (_, folderPath) => {
+ipcMain.handle("xml:convertFolder", async (_, folderPath, outputPath) => {
   try {
     const result = parseFolder(folderPath);
     if (result.valid.length === 0) {
       return { ok: false, msg: "No se encontraron XMLs válidos" };
     }
-    const outputPath = path.join(folderPath, `facturas_${result.valid.length}_xmls.xlsx`);
-    await generateExcel(result.valid, outputPath);
+    let destPath = outputPath || path.join(folderPath, `facturas_${result.valid.length}_xmls.xlsx`);
+    if (fs.existsSync(destPath) && fs.statSync(destPath).isDirectory()) {
+      destPath = path.join(destPath, `facturas_${result.valid.length}_xmls.xlsx`);
+    }
+    await generateExcel(result.valid, destPath);
     return {
       ok: true,
-      msg: `Excel generado: ${outputPath}`,
+      msg: `Excel generado: ${destPath}`,
       total: result.valid.length + result.invalid.length,
       valid: result.valid.length,
       invalid: result.invalid.length,
-      outputPath,
+      outputPath: destPath,
     };
   } catch (e) {
     return { ok: false, msg: e.message };

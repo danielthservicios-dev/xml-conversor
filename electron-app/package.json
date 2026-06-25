@@ -8,6 +8,7 @@
     "build": "electron-builder build --publish never",
     "build:mac": "electron-builder build --mac --publish never",
     "build:win": "electron-builder build --win --publish never",
+    "test": "jest",
     "postinstall": "playwright install chromium",
     "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
@@ -19,7 +20,8 @@
   },
   "devDependencies": {
     "electron": "^33.0.0",
-    "electron-builder": "^25.0.0"
+    "electron-builder": "^25.0.0",
+    "jest": "^30.4.2"
   },
   "build": {
     "appId": "com.xml-conversor.app",
@@ -28,6 +30,7 @@
     "directories": {
       "output": "dist"
     },
+    "icon": "assets/icon.png",
     "files": [
       "main.js",
       "preload.js",
@@ -64,6 +67,7 @@
       "minimumSystemVersion": "10.15"
     },
     "win": {
+      "icon": "assets/icon.ico",
       "target": [
         {
           "target": "nsis",
@@ -76,10 +80,16 @@
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": null,
-      "uninstallerIcon": null,
-      "installerHeaderIcon": null
+      "language": "es_ES",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "unicode": true,
+      "installerLanguages": ["en_US", "es_ES"],
+      "shortcutName": "SAT XML Conversor",
+      "createDesktopShortcut": true
     },
     "dmg": {
       "title": "SAT XML Conversor",

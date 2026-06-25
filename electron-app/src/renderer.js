@@ -12,12 +12,21 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
 // ─── Helpers ────────────────────────────────────────────────────
 
 let lastDownloadFolder = "";
+let downloadFolderOverride = "";
 let editingClientId = null;
 
 function log(el, msg) {
   el.value += msg + "\n";
   el.scrollTop = el.scrollHeight;
 }
+
+// Listen for log messages from main process (Playwright logs)
+window.api.onSatLog((msg) => {
+  const logEl = document.getElementById("dl-log");
+  if (logEl && document.getElementById("tab-descargar").classList.contains("active")) {
+    log(logEl, msg);
+  }
+});
 
 // ─── CLIENTES TAB ───────────────────────────────────────────────
 
@@ -105,6 +114,7 @@ document.getElementById("cli-btn-save").addEventListener("click", async () => {
   }
   clearClientForm();
   loadClientTable();
+  loadClientCombo();
 });
 
 document.getElementById("cli-btn-clear").addEventListener("click", clearClientForm);
@@ -114,6 +124,7 @@ document.getElementById("cli-btn-delete").addEventListener("click", async () => 
   await window.api.dbDelete(editingClientId);
   clearClientForm();
   loadClientTable();
+  loadClientCombo();
 });
 
 // ─── DOWNLOAD TAB ───────────────────────────────────────────────
@@ -161,27 +172,38 @@ document.getElementById("dl-cliente").addEventListener("change", async (e) => {
     selectedClient = null;
     document.getElementById("dl-rfc").textContent = "";
     document.getElementById("dl-cer").textContent = "";
+    document.getElementById("dl-key").textContent = "";
+    document.getElementById("dl-password").textContent = "";
     document.getElementById("dl-btn-start").disabled = true;
     document.getElementById("dl-btn-convert").disabled = true;
+    document.getElementById("dl-btn-retrieve").disabled = true;
     return;
   }
   selectedClient = await window.api.dbGet(Number(id));
   if (selectedClient) {
     document.getElementById("dl-rfc").textContent = selectedClient.rfc;
     document.getElementById("dl-cer").textContent = selectedClient.ruta_cer.split("/").pop() || selectedClient.ruta_cer.split("\\").pop();
+    document.getElementById("dl-key").textContent = selectedClient.ruta_key.split("/").pop() || selectedClient.ruta_key.split("\\").pop();
+    document.getElementById("dl-password").textContent = "•".repeat(selectedClient.password_llave.length);
     document.getElementById("dl-btn-start").disabled = false;
     document.getElementById("dl-btn-convert").disabled = false;
+    document.getElementById("dl-btn-retrieve").disabled = false;
   }
 });
 
 document.getElementById("dl-btn-refresh").addEventListener("click", loadClientCombo);
 
+let isDownloading = false;
+
 async function runDownload(convertAfter = false) {
-  if (!selectedClient) return;
+  if (!selectedClient || isDownloading) return;
+  isDownloading = true;
   const logEl = document.getElementById("dl-log");
   const statusEl = document.getElementById("dl-status");
   const btnStart = document.getElementById("dl-btn-start");
   const btnConvert = document.getElementById("dl-btn-convert");
+  const progressBar = document.getElementById("dl-progress");
+  const progressText = document.getElementById("dl-progress-text");
 
   btnStart.disabled = true;
   btnConvert.disabled = true;
@@ -196,11 +218,13 @@ async function runDownload(convertAfter = false) {
   const tipo = document.querySelector('input[name="tipo"]:checked').value;
 
   const homeDir = await window.api.getHomeDir();
-  const basePath = selectedClient.ruta_descarga || `${homeDir}/Downloads/SAT_XMLs`;
+  const basePath = downloadFolderOverride || selectedClient.ruta_descarga || `${homeDir}/Downloads/SAT_XMLs`;
   const clientPath = `${basePath}/${selectedClient.rfc}`;
 
   log(logEl, `Iniciando descarga para ${selectedClient.rfc}...`);
 
+  // Phase 1: Login
+  log(logEl, "Fase 1/4: Iniciando sesión en el SAT...");
   const loginResult = await window.api.satLogin(selectedClient.id);
   if (!loginResult.ok) {
     log(logEl, `Error de autenticación: ${loginResult.msg}`);
@@ -212,39 +236,68 @@ async function runDownload(convertAfter = false) {
   }
   log(logEl, "Login exitoso");
 
-  const tipos = tipo === "ambas" ? ["emitidas", "recibidas"] : [tipo];
+  try {
+    // Phase 2: Count total periods
+    const tipos = tipo === "ambas" ? ["emitidas", "recibidas"] : [tipo];
   let successCount = 0;
   let failCount = 0;
+  let totalPeriods = 0;
 
   for (const t of tipos) {
-    log(logEl, `\n--- Facturas ${t} ---`);
-    let y = desdeA,
-      m = desdeM;
+    let y = desdeA, m = desdeM;
+    while (y < hastaA || (y === hastaA && m <= hastaM)) {
+      totalPeriods++;
+      m++;
+      if (m > 12) { m = 1; y++; }
+    }
+  }
+
+  // Reset for actual download
+  let completedPeriods = 0;
+  progressBar.max = totalPeriods;
+  progressBar.value = 0;
+  progressText.textContent = `0/${totalPeriods}`;
+
+  // Phase 3: Navigate and download each tipo
+  for (const t of tipos) {
+    log(logEl, `\nFase 3/4: Navegando a facturas ${t}...`);
+    let navResult;
+    if (t === "emitidas") {
+      navResult = await window.api.satNavigateEmitidas();
+    } else {
+      navResult = await window.api.satNavigateRecibidas();
+    }
+    if (!navResult.ok) {
+      log(logEl, `Error al navegar: ${navResult.msg}`);
+      failCount++;
+      continue;
+    }
+
+    let y = desdeA, m = desdeM;
     while (y < hastaA || (y === hastaA && m <= hastaM)) {
       const periodPath = `${clientPath}/${t}/${y}-${String(m).padStart(2, "0")}`;
-      const result = await window.api.satDownloadPeriodo(
-        selectedClient.id,
-        y,
-        m,
-        t,
-        periodPath
-      );
+      log(logEl, `\n--- ${MESES[m - 1]} ${y} (${t}) ---`);
+
+      const result = await window.api.satDownloadPeriodo(y, m, t, periodPath);
       if (result.ok) {
         successCount++;
-        log(logEl, `  ${MESES[m - 1]} ${y}: OK`);
+        log(logEl, `OK: ${result.msg}`);
       } else {
         failCount++;
-        log(logEl, `  ${MESES[m - 1]} ${y}: ERROR - ${result.msg}`);
+        log(logEl, `ERROR: ${result.msg}`);
       }
+
+      completedPeriods++;
+      progressBar.value = completedPeriods;
+      progressText.textContent = `${completedPeriods}/${totalPeriods}`;
+
       m++;
-      if (m > 12) {
-        m = 1;
-        y++;
-      }
+      if (m > 12) { m = 1; y++; }
     }
   }
 
   log(logEl, `\n--- Resumen ---`);
+  log(logEl, `Periodos solicitados: ${totalPeriods}`);
   log(logEl, `Exitosos: ${successCount}, Fallidos: ${failCount}`);
   log(logEl, `Carpeta: ${clientPath}`);
   lastDownloadFolder = clientPath;
@@ -254,7 +307,8 @@ async function runDownload(convertAfter = false) {
 
   if (convertAfter) {
     log(logEl, "\nConvirtiendo XML a Excel...");
-    const cvResult = await window.api.convertFolder(clientPath);
+    const outputPath = `${clientPath}/facturas_${selectedClient.rfc}.xlsx`;
+    const cvResult = await window.api.convertFolder(clientPath, outputPath);
     if (cvResult.ok) {
       log(logEl, cvResult.msg);
       log(logEl, `Válidos: ${cvResult.valid}, Inválidos: ${cvResult.invalid}`);
@@ -263,12 +317,48 @@ async function runDownload(convertAfter = false) {
     }
   }
 
-  btnStart.disabled = false;
-  btnConvert.disabled = false;
+  } catch (e) {
+    log(logEl, `Error inesperado: ${e.message}`);
+    statusEl.textContent = "Error";
+    statusEl.className = "status-error";
+  } finally {
+    btnStart.disabled = false;
+    btnConvert.disabled = false;
+    isDownloading = false;
+  }
+}
+
+async function retrieveDownloads() {
+  if (!selectedClient) return;
+  const logEl = document.getElementById("dl-log");
+  const statusEl = document.getElementById("dl-status");
+  const homeDir = await window.api.getHomeDir();
+  const basePath = downloadFolderOverride || selectedClient.ruta_descarga || `${homeDir}/Downloads/SAT_XMLs`;
+  const clientPath = `${basePath}/${selectedClient.rfc}`;
+
+  statusEl.textContent = "Recuperando descargas...";
+  log(logEl, "\nRecuperando descargas pendientes del SAT...");
+  const result = await window.api.satRetrieveDownloads(clientPath);
+  if (result.ok) {
+    log(logEl, `Descargados: ${result.downloaded}, Fallos: ${result.failed}`);
+    statusEl.textContent = `Recuperados: ${result.downloaded}`;
+    statusEl.className = "status-ok";
+  } else {
+    log(logEl, result.msg);
+    statusEl.textContent = "Sin descargas disponibles";
+  }
 }
 
 document.getElementById("dl-btn-start").addEventListener("click", () => runDownload(false));
 document.getElementById("dl-btn-convert").addEventListener("click", () => runDownload(true));
+document.getElementById("dl-btn-retrieve").addEventListener("click", retrieveDownloads);
+document.getElementById("dl-btn-folder").addEventListener("click", async () => {
+  const path = await window.api.selectFolder();
+  if (path) {
+    downloadFolderOverride = path;
+    document.getElementById("dl-folder").value = path;
+  }
+});
 
 // ─── CONVERT TAB ───────────────────────────────────────────────
 
@@ -320,7 +410,8 @@ document.getElementById("cv-btn-convert").addEventListener("click", async () => 
   log(logEl, `Escaneando XMLs en: ${inputPath}`);
   progress.style.width = "20%";
 
-  const result = await window.api.convertFolder(inputPath);
+  const outputPath = document.getElementById("cv-output").value;
+  const result = await window.api.convertFolder(inputPath, outputPath);
 
   if (result.ok) {
     progress.style.width = "100%";

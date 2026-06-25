@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;">
   <title>SAT XML Conversor</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -94,6 +95,14 @@
           <span id="dl-cer"></span>
         </div>
         <div class="form-row">
+          <label>Llave .key:</label>
+          <span id="dl-key"></span>
+        </div>
+        <div class="form-row">
+          <label>Password:</label>
+          <span id="dl-password"></span>
+        </div>
+        <div class="form-row">
           <label>Tipo:</label>
           <div class="radio-group">
             <label><input type="radio" name="tipo" value="emitidas" checked /> Emitidas</label>
@@ -109,10 +118,22 @@
           <select id="dl-hasta-mes"></select>
           <select id="dl-hasta-anio"></select>
         </div>
+        <div class="form-row">
+          <label>Carpeta destino:</label>
+          <div class="file-input">
+            <input type="text" id="dl-folder" placeholder="Seleccionar carpeta (opcional)" readonly />
+            <button class="btn small" id="dl-btn-folder">Examinar</button>
+          </div>
+        </div>
         <div class="form-actions">
           <button class="btn primary" id="dl-btn-start" disabled>Iniciar Descarga SAT</button>
           <button class="btn primary" id="dl-btn-convert" disabled>Descargar y Convertir</button>
+          <button class="btn" id="dl-btn-retrieve" disabled>Recuperar descargas</button>
           <span id="dl-status"></span>
+        </div>
+        <div class="progress-container">
+          <progress id="dl-progress" max="100" value="0"></progress>
+          <span id="dl-progress-text">0/0</span>
         </div>
       </div>
       <div class="log-box">

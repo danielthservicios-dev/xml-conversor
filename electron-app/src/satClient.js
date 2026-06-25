@@ -1,120 +1,362 @@
 const { chromium } = require("playwright");
+const path = require("path");
+const fs = require("fs");
 
 const SAT_URL = "https://portalcfdi.facturaelectronica.sat.gob.mx/";
+const MAX_RETRIES = 2;
 
 class SATClient {
-  constructor(rutaCer, rutaKey, password) {
+  constructor(rutaCer, rutaKey, password, logFn = null) {
     this.rutaCer = rutaCer;
     this.rutaKey = rutaKey;
     this.password = password;
+    this.logFn = logFn;
     this.browser = null;
     this.page = null;
   }
 
-  async login() {
+  log(msg) {
+    if (this.logFn) this.logFn(msg);
+  }
+
+  async _initBrowser() {
     this.browser = await chromium.launch({ headless: false });
     const context = await this.browser.newContext({
       acceptDownloads: true,
       viewport: { width: 1366, height: 768 },
     });
+    context.setDefaultTimeout(0);
     this.page = await context.newPage();
+    this.page.setDefaultTimeout(0);
+    this.page.setDefaultNavigationTimeout(0);
+  }
+
+  async login() {
+    this.log("Iniciando navegador...");
+    await this._initBrowser();
     const page = this.page;
 
     try {
-      await page.goto(SAT_URL, { timeout: 30000 });
-      await page.waitForLoadState("networkidle");
+      this.log("Abriendo portal SAT...");
+      await page.goto(SAT_URL);
+      await page.waitForLoadState("load");
 
-      await page.locator("text=Iniciar sesión").first().waitFor({ timeout: 15000 });
-      await page.locator("text=Iniciar sesión").first().click();
+      this.log("Haciendo clic en 'e.firma'...");
+      const efirmaBtn = page.locator("#buttonFiel");
+      await efirmaBtn.waitFor();
+      await efirmaBtn.click();
       await page.waitForTimeout(2000);
 
-      await page.locator("text=Certificado de sello digital").first().waitFor({ timeout: 10000 });
-      await page.locator("text=Certificado de sello digital").first().click();
-      await page.waitForTimeout(1000);
+      this.log(`Subiendo certificado: ${this.rutaCer}`);
+      const [fc1] = await Promise.all([
+        page.waitForEvent("filechooser"),
+        page.locator("#btnCertificate").click(),
+      ]);
+      await fc1.setFiles(this.rutaCer);
+      this.log("Certificado subido");
 
-      const fileInputs = page.locator("input[type='file']");
-      await fileInputs.first().waitFor({ timeout: 10000 });
-      await fileInputs.nth(0).setInputFiles(this.rutaCer);
-      await page.waitForTimeout(1000);
+      this.log(`Subiendo llave: ${this.rutaKey}`);
+      const [fc2] = await Promise.all([
+        page.waitForEvent("filechooser"),
+        page.locator("#btnPrivateKey").click(),
+      ]);
+      await fc2.setFiles(this.rutaKey);
+      this.log("Llave subida");
 
-      const count = await fileInputs.count();
-      if (count > 1) {
-        await fileInputs.nth(1).setInputFiles(this.rutaKey);
-      } else {
+      this.log("Ingresando password...");
+      const pwInput = page.locator("input[type='password']").first();
+      await pwInput.waitFor();
+      await pwInput.fill(this.password);
+
+      this.log("Enviando formulario de inicio de sesión...");
+      await page.locator("#submit").waitFor({ state: "visible" });
+      await page.waitForFunction(() => !document.getElementById("submit")?.disabled);
+      await page.locator("#submit").click();
+
+      this.log("Esperando autenticación...");
+      await page.waitForTimeout(5000);
+
+      const currentUrl = page.url();
+      if (currentUrl.toLowerCase().includes("error")) {
+        this.log("Error de autenticación - revisa certificados y password");
+        return { ok: false, msg: "Error de autenticación" };
+      }
+
+      this.log("Inicio de sesión exitoso");
+      return { ok: true, msg: "Login exitoso" };
+    } catch (e) {
+      this.log(`Error durante autenticación: ${e.message}`);
+      return { ok: false, msg: e.message };
+    }
+  }
+
+  async navigateToEmitidas() {
+    return this._navigateToFacturas("emitidas");
+  }
+
+  async navigateToRecibidas() {
+    const page = this.page;
+    if (!page) return { ok: false, msg: "Navegador no inicializado" };
+    try {
+      this.log("Navegando a facturas recibidas...");
+      const link = page.locator('a[title="Facturas Recibidas"]');
+      await link.waitFor();
+      await link.click();
+      await page.waitForLoadState("load");
+      this.log("Navegación exitosa a recibidas");
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, msg: `No se pudo navegar a facturas recibidas: ${e.message}` };
+    }
+  }
+
+  async _navigateToFacturas(tipo) {
+    const page = this.page;
+    if (!page) return { ok: false, msg: "Navegador no inicializado" };
+
+    try {
+      this.log(`Navegando a facturas ${tipo}...`);
+      const link = page.locator(`text=Facturas ${tipo}`).first();
+      await link.waitFor();
+      await link.click();
+      await page.waitForLoadState("load");
+      this.log("Navegación exitosa");
+      return { ok: true };
+    } catch {
+      this.log("No se encontró el enlace directo. Intentando vía menú...");
+      try {
+        const consultas = page.locator("text=Consultas").first();
+        await consultas.waitFor();
+        await consultas.click();
+        await page.waitForTimeout(1000);
+        const subLink = page.locator(`text=Facturas ${tipo}`).first();
+        await subLink.waitFor();
+        await subLink.click();
+        await page.waitForLoadState("load");
+        return { ok: true };
+      } catch (e) {
+        return { ok: false, msg: `No se pudo navegar a facturas ${tipo}` };
+      }
+    }
+  }
+
+  async searchPeriodo(year, month) {
+    const page = this.page;
+    if (!page) return { ok: false, msg: "Navegador no inicializado" };
+
+    try {
+      await page.waitForTimeout(2000);
+
+      this.log("Seleccionando filtro por fechas...");
+      await page.locator("input#ctl00_MainContent_RdoFechas").click();
+      this.log("Esperando respuesta del servidor...");
+      await page.waitForTimeout(5000);
+
+      this.log(`Seleccionando año ${year}...`);
+      await page.locator("#DdlAnio").selectOption(String(year));
+
+      this.log(`Seleccionando mes ${String(month).padStart(2, "0")}...`);
+      await page.locator("#ctl00_MainContent_CldFecha_DdlMes").selectOption(String(month));
+
+      await page.waitForTimeout(500);
+
+      this.log("Haciendo clic en Buscar CFDI...");
+      await page.locator("#ctl00_MainContent_BtnBusqueda").click();
+
+      this.log("Esperando resultados de búsqueda...");
+      await page.waitForTimeout(8000);
+
+      const downloadBtns = page.locator("span.glyphicon-cloud-download, span[onclick*='AccionCfdi']");
+      const total = await downloadBtns.count();
+      this.log(`Facturas encontradas: ${total}`);
+
+      return { ok: true, total };
+    } catch (e) {
+      return { ok: false, msg: e.message };
+    }
+  }
+
+  async requestDownloadAll(downloadPath) {
+    const page = this.page;
+    if (!page) return { ok: false, msg: "Navegador no inicializado" };
+
+    try {
+      const urlParts = await page.locator("span.glyphicon-cloud-download").evaluateAll(
+        (els) => els.map((el) => {
+          const onclick = el.getAttribute("onclick");
+          const match = onclick.match(/AccionCfdi\('([^']+)'/);
+          return match ? match[1] : null;
+        }).filter(Boolean)
+      );
+
+      const total = urlParts.length;
+
+      if (total === 0) {
+        this.log("No hay facturas para descargar en este periodo");
+        return { ok: true, downloaded: 0, failed: 0, total: 0 };
+      }
+
+      if (downloadPath) {
+        fs.mkdirSync(downloadPath, { recursive: true });
+      }
+
+      this.log(`Facturas encontradas: ${total}`);
+
+      const baseUrl = page.url();
+      let downloaded = 0;
+      let failed = 0;
+
+      for (let i = 0; i < total; i++) {
+        try {
+          this.log(`Descargando ${i + 1}/${total}...`);
+          const resolvedUrl = new URL(urlParts[i], baseUrl).href;
+          const xml = await page.evaluate(async (url) => {
+            const res = await fetch(url);
+            return await res.text();
+          }, resolvedUrl);
+
+          if (!xml || xml.trim().length === 0) {
+            throw new Error("Contenido XML vacío");
+          }
+
+          const fileName = `cfdi_${i + 1}.xml`;
+          const destDir = downloadPath || ".";
+          const filePath = path.join(destDir, fileName);
+          fs.writeFileSync(filePath, xml, "utf-8");
+          this.log(`✓ ${i + 1}/${total} — ${filePath}`);
+          downloaded++;
+        } catch (e) {
+          this.log(`✗ ${i + 1}/${total} — Error: ${e.message}`);
+          failed++;
+        }
         await page.waitForTimeout(2000);
-        const keyInputs = page.locator("input[type='file']");
-        if ((await keyInputs.count()) > 1) {
-          await keyInputs.nth(1).setInputFiles(this.rutaKey);
-        } else {
-          return { ok: false, msg: "No se encontró campo para la llave" };
+      }
+
+      this.log(`Periodo completado: ${downloaded} descargadas, ${failed} fallidas`);
+      return { ok: true, downloaded, failed, total };
+    } catch (e) {
+      return { ok: false, msg: e.message };
+    }
+  }
+
+  async retrieveDownloads(downloadPath) {
+    const page = this.page;
+    if (!page) return { ok: false, msg: "Navegador no inicializado" };
+
+    try {
+      this.log("Navegando a Recuperar descargas...");
+      const recuperarLink = page.locator("text=Recuperar descargas").first();
+      if ((await recuperarLink.count()) === 0) {
+        const consultas = page.locator("text=Consultas").first();
+        if ((await consultas.count()) > 0) {
+          await consultas.click();
+          await page.waitForTimeout(1000);
         }
       }
-      await page.waitForTimeout(1000);
-
-      await page.locator("input[type='password']").first().waitFor({ timeout: 10000 });
-      await page.locator("input[type='password']").first().fill(this.password);
-
-      const submitBtn = page.locator("button[type='submit']").first();
-      if (await submitBtn.isVisible()) {
-        await submitBtn.click();
-      } else {
-        await page.locator("text=Ingresar").first().click();
+      const recuperar = page.locator("text=Recuperar descargas").first();
+      if ((await recuperar.count()) > 0) {
+        await recuperar.click();
+        await page.waitForLoadState("load");
+        await page.waitForTimeout(3000);
       }
 
-      await page.waitForTimeout(5000);
-      return { ok: true, msg: "Login exitoso" };
+      const downloadLinks = page.locator("a:has-text('Descargar'), button:has-text('Descargar')");
+      const linkCount = await downloadLinks.count();
+
+      if (linkCount === 0) {
+        return { ok: false, msg: "No hay descargas disponibles para recuperar. Las solicitudes pueden tardar minutos en procesarse." };
+      }
+
+      let downloaded = 0;
+      let failed = 0;
+
+      for (let i = 0; i < linkCount; i++) {
+        const link = downloadLinks.nth(i);
+        try {
+          const [download] = await Promise.all([
+            page.waitForEvent("download"),
+            link.click(),
+          ]);
+
+          const now = new Date();
+          const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+          const destDir = downloadPath || path.join(process.cwd(), "downloads", dateStr);
+          fs.mkdirSync(destDir, { recursive: true });
+
+          const fileName = download.suggestedFilename() || `descarga_${i}_${dateStr}.zip`;
+          const filePath = path.join(destDir, fileName);
+          await download.saveAs(filePath);
+          this.log(`Descargado: ${fileName}`);
+          downloaded++;
+        } catch (e) {
+          this.log(`Error al descargar: ${e.message}`);
+          failed++;
+        }
+        await page.waitForTimeout(1000);
+      }
+
+      return { ok: true, downloaded, failed };
     } catch (e) {
       return { ok: false, msg: e.message };
     }
   }
 
   async downloadPeriodo(year, month, tipo, downloadPath) {
-    if (!this.page) return { ok: false, msg: "No hay sesión activa" };
+    const page = this.page;
+    if (!page) return { ok: false, msg: "Navegador no inicializado" };
 
     const meses = [
       "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
       "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
     ];
+    const mesStr = meses[month - 1];
 
-    try {
-      await this.page.waitForTimeout(2000);
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        this.log(`[${attempt}/${MAX_RETRIES}] Periodo: ${mesStr} ${year} (${tipo})`);
 
-      // Select year and month (generic selectors - SAT may vary)
-      const selects = await this.page.locator("select").all();
-      for (const sel of selects) {
-        const html = await sel.innerHTML();
-        if (html.includes(String(year))) {
-          await sel.selectOption(String(year));
-          break;
+        const searchResult = await this.searchPeriodo(year, month);
+        if (!searchResult.ok) {
+          if (attempt < MAX_RETRIES) {
+            this.log("Reintentando búsqueda...");
+            await page.waitForTimeout(3000);
+            continue;
+          }
+          return { ok: false, msg: `Error en búsqueda: ${searchResult.msg}` };
+        }
+
+        const downloadResult = await this.requestDownloadAll(downloadPath);
+        if (downloadResult.total > 0) {
+          this.log(`Descargadas: ${downloadResult.downloaded}/${downloadResult.total}`);
+        }
+        if (downloadResult.failed > 0) {
+          this.log(`${downloadResult.failed} fallidas`);
+        }
+
+        return {
+          ok: true,
+          msg: `${mesStr} ${year} - ${downloadResult.downloaded}/${downloadResult.total} descargadas`,
+        };
+      } catch (e) {
+        this.log(`Error en intento ${attempt}: ${e.message}`);
+        if (attempt < MAX_RETRIES) {
+          this.log("Reintentando...");
+          await page.waitForTimeout(3000);
+        } else {
+          return { ok: false, msg: `Error: ${e.message}` };
         }
       }
-
-      for (const sel of selects) {
-        const html = await sel.innerHTML();
-        if (html.includes(meses[month - 1].slice(0, 4))) {
-          await sel.selectOption(String(month));
-          break;
-        }
-      }
-
-      // Click Buscar/Consultar
-      const buscarBtn = this.page.locator("button:has-text('Buscar')").first();
-      if ((await buscarBtn.count()) > 0) {
-        await buscarBtn.click();
-      } else {
-        const consultarBtn = this.page.locator("button:has-text('Consultar')").first();
-        if ((await consultarBtn.count()) > 0) await consultarBtn.click();
-      }
-      await this.page.waitForTimeout(8000);
-
-      return { ok: true, msg: `${meses[month - 1]} ${year}` };
-    } catch (e) {
-      return { ok: false, msg: e.message };
     }
+
+    return { ok: false, msg: "Falló después de reintentos" };
   }
 
   async close() {
-    if (this.browser) await this.browser.close();
+    try {
+      if (this.browser) await this.browser.close();
+    } catch {}
+    this.page = null;
+    this.browser = null;
   }
 }
 

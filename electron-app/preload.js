@@ -16,12 +16,22 @@ contextBridge.exposeInMainWorld("api", {
 
   // SAT
   satLogin: (clienteId) => ipcRenderer.invoke("sat:login", clienteId),
-  satDownloadPeriodo: (clienteId, year, month, tipo, downloadPath) =>
-    ipcRenderer.invoke("sat:downloadPeriodo", clienteId, year, month, tipo, downloadPath),
+  satNavigateEmitidas: () => ipcRenderer.invoke("sat:navigateEmitidas"),
+  satNavigateRecibidas: () => ipcRenderer.invoke("sat:navigateRecibidas"),
+  satDownloadPeriodo: (year, month, tipo, downloadPath) =>
+    ipcRenderer.invoke("sat:downloadPeriodo", year, month, tipo, downloadPath),
+  satRetrieveDownloads: (downloadPath) =>
+    ipcRenderer.invoke("sat:retrieveDownloads", downloadPath),
+  satClose: () => ipcRenderer.invoke("sat:close"),
+
+  // Log events from main process
+  onSatLog: (callback) => {
+    ipcRenderer.on("sat:log", (_, msg) => callback(msg));
+  },
 
   // System
   getHomeDir: () => ipcRenderer.invoke("sys:homeDir"),
 
   // XML
-  convertFolder: (folderPath) => ipcRenderer.invoke("xml:convertFolder", folderPath),
+  convertFolder: (folderPath, outputPath) => ipcRenderer.invoke("xml:convertFolder", folderPath, outputPath),
 });

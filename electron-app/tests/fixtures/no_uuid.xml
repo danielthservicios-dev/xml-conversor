@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cfdi:Comprobante Version="4.0" Serie="S" Folio="F" Fecha="2026-06-03T00:00:00" SubTotal="100" Total="100" TipoDeComprobante="I" FormaPago="99" MetodoPago="PPD" Moneda="MXN"
+    xmlns:cfdi="http://www.sat.gob.mx/cfd/4"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <cfdi:Emisor Rfc="EKU9003173C9" Nombre="ESCUELA KEMPER URGATE" RegimenFiscal="601" />
+    <cfdi:Receptor Rfc="URE180429TM6" Nombre="UNIVERSIDAD ROBOTICA ESPAÑOLA" UsoCFDI="G01" />
+    <cfdi:Conceptos>
+        <cfdi:Concepto ClaveProdServ="50211503" Cantidad="1" ClaveUnidad="H87" Unidad="Pieza" Descripcion="Producto" ValorUnitario="100.00" Importe="100.00" ObjetoImp="01" />
+    </cfdi:Conceptos>
+</cfdi:Comprobante>
