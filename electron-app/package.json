@@ -82,12 +82,10 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "language": "es_ES",
       "installerIcon": "assets/icon.ico",
       "uninstallerIcon": "assets/icon.ico",
       "installerHeaderIcon": "assets/icon.ico",
       "unicode": true,
-      "installerLanguages": ["en_US", "es_ES"],
       "shortcutName": "SAT XML Conversor",
       "createDesktopShortcut": true
     },
