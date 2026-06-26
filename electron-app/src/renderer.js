@@ -230,6 +230,7 @@ async function runDownload(convertAfter = false) {
     log(logEl, `Error de autenticación: ${loginResult.msg}`);
     statusEl.textContent = "Error de autenticación";
     statusEl.className = "status-error";
+    await window.api.notify("SAT XML Conversor", `Error de autenticación: ${loginResult.msg}`);
     await window.api.satClose();
     btnStart.disabled = false;
     btnConvert.disabled = false;
@@ -270,6 +271,7 @@ async function runDownload(convertAfter = false) {
     }
     if (!navResult.ok) {
       log(logEl, `Error al navegar: ${navResult.msg}`);
+      await window.api.notify("SAT XML Conversor", `Error al navegar en el SAT: ${navResult.msg}`);
       failCount++;
       continue;
     }
@@ -352,9 +354,19 @@ async function retrieveDownloads() {
   }
 }
 
+function clearDownloadForm() {
+  document.getElementById("dl-log").value = "";
+  document.getElementById("dl-status").textContent = "";
+  document.getElementById("dl-status").className = "";
+  document.getElementById("dl-progress").value = 0;
+  document.getElementById("dl-progress-text").textContent = "0/0";
+  if (!isDownloading) window.api.satClose();
+}
+
 document.getElementById("dl-btn-start").addEventListener("click", () => runDownload(false));
 document.getElementById("dl-btn-convert").addEventListener("click", () => runDownload(true));
 document.getElementById("dl-btn-retrieve").addEventListener("click", retrieveDownloads);
+document.getElementById("dl-btn-clear").addEventListener("click", clearDownloadForm);
 document.getElementById("dl-btn-folder").addEventListener("click", async () => {
   const path = await window.api.selectFolder();
   if (path) {

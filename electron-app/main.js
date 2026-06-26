@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, safeStorage } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, safeStorage, Notification } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { initDB, getDB } = require("./src/database");
@@ -210,6 +210,13 @@ ipcMain.handle("sat:close", async () => {
 });
 
 // ─── System ────────────────────────────────────────────────────
+
+ipcMain.handle("app:notify", async (_, title, body) => {
+  if (mainWindow) {
+    new Notification({ title, body }).show();
+    mainWindow.focus();
+  }
+});
 
 ipcMain.handle("sys:homeDir", () => {
   return require("os").homedir();
