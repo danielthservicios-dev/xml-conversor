@@ -218,6 +218,14 @@ ipcMain.handle("app:notify", async (_, title, body) => {
   }
 });
 
+ipcMain.handle("app:focus", () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  }
+});
+
 ipcMain.handle("sys:homeDir", () => {
   return require("os").homedir();
 });

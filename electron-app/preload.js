@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld("api", {
   // System
   getHomeDir: () => ipcRenderer.invoke("sys:homeDir"),
   notify: (title, body) => ipcRenderer.invoke("app:notify", title, body),
+  focusWindow: () => ipcRenderer.invoke("app:focus"),
 
   // XML
   convertFolder: (folderPath, outputPath) => ipcRenderer.invoke("xml:convertFolder", folderPath, outputPath),

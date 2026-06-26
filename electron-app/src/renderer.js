@@ -23,6 +23,7 @@ function log(el, msg) {
 function showErrorModal(message) {
   document.getElementById("error-modal-text").textContent = message;
   document.getElementById("error-modal").classList.remove("hidden");
+  window.api.focusWindow();
 }
 
 document.getElementById("error-modal-close").addEventListener("click", () => {
