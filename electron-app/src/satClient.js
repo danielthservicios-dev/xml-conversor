@@ -156,19 +156,7 @@ class SATClient {
   }
 
   async navigateToRecibidas() {
-    const page = this.page;
-    if (!page) return { ok: false, msg: "Navegador no inicializado" };
-    try {
-      this.log("Navegando a facturas recibidas...");
-      const link = page.locator('a[title="Facturas Recibidas"]');
-      await link.waitFor();
-      await link.click();
-      await page.waitForLoadState("load");
-      this.log("Navegación exitosa a recibidas");
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, msg: `No se pudo navegar a facturas recibidas: ${e.message}` };
-    }
+    return this._navigateToFacturas("recibidas");
   }
 
   async _navigateToFacturas(tipo) {
