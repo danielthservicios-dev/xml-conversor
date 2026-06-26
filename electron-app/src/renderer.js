@@ -188,6 +188,11 @@ document.getElementById("dl-cliente").addEventListener("change", async (e) => {
     document.getElementById("dl-btn-start").disabled = false;
     document.getElementById("dl-btn-convert").disabled = false;
     document.getElementById("dl-btn-retrieve").disabled = false;
+    document.getElementById("dl-log").value = "";
+    document.getElementById("dl-status").textContent = "";
+    document.getElementById("dl-status").className = "";
+    document.getElementById("dl-progress").value = 0;
+    document.getElementById("dl-progress-text").textContent = "0/0";
   }
 });
 
@@ -356,9 +361,28 @@ async function retrieveDownloads() {
   }
 }
 
+function clearDownloadForm() {
+  selectedClient = null;
+  document.getElementById("dl-cliente").value = "";
+  document.getElementById("dl-rfc").textContent = "";
+  document.getElementById("dl-cer").textContent = "";
+  document.getElementById("dl-key").textContent = "";
+  document.getElementById("dl-password").textContent = "";
+  document.getElementById("dl-log").value = "";
+  document.getElementById("dl-status").textContent = "";
+  document.getElementById("dl-status").className = "";
+  document.getElementById("dl-progress").value = 0;
+  document.getElementById("dl-progress-text").textContent = "0/0";
+  document.getElementById("dl-btn-start").disabled = true;
+  document.getElementById("dl-btn-convert").disabled = true;
+  document.getElementById("dl-btn-retrieve").disabled = true;
+  if (!isDownloading) window.api.satClose();
+}
+
 document.getElementById("dl-btn-start").addEventListener("click", () => runDownload(false));
 document.getElementById("dl-btn-convert").addEventListener("click", () => runDownload(true));
 document.getElementById("dl-btn-retrieve").addEventListener("click", retrieveDownloads);
+document.getElementById("dl-btn-clear").addEventListener("click", clearDownloadForm);
 document.getElementById("dl-btn-folder").addEventListener("click", async () => {
   const path = await window.api.selectFolder();
   if (path) {
