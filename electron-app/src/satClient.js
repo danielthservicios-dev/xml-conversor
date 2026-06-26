@@ -19,16 +19,6 @@ class SATClient {
     if (this.logFn) this.logFn(msg);
   }
 
-  _validateFiles() {
-    if (!fs.existsSync(this.rutaCer)) {
-      return "El archivo de certificado no existe: " + this.rutaCer;
-    }
-    if (!fs.existsSync(this.rutaKey)) {
-      return "El archivo de llave no existe: " + this.rutaKey;
-    }
-    return null;
-  }
-
   async _initBrowser() {
     process.env.PLAYWRIGHT_BROWSERS_PATH = "0";
     this.browser = await chromium.launch({ headless: false });
@@ -40,41 +30,17 @@ class SATClient {
     this.page = await context.newPage();
     this.page.setDefaultTimeout(0);
     this.page.setDefaultNavigationTimeout(0);
-    const page = this.page;
-    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        await page.goto(SAT_URL);
-        await page.waitForLoadState("load");
-        return;
-      } catch (e) {
-        if (attempt < MAX_RETRIES) {
-          this.log(`Reintentando conexión al SAT (${attempt}/${MAX_RETRIES})...`);
-          await page.waitForTimeout(5000);
-        } else {
-          throw new Error("No se pudo conectar con el SAT. Verifica tu conexión a internet.");
-        }
-      }
-    }
   }
 
   async login() {
-    const fileError = this._validateFiles();
-    if (fileError) {
-      this.log(fileError);
-      return { ok: false, msg: fileError };
-    }
-
     this.log("Iniciando navegador...");
-    try {
-      await this._initBrowser();
-    } catch (e) {
-      this.log(e.message);
-      return { ok: false, msg: e.message };
-    }
+    await this._initBrowser();
     const page = this.page;
 
     try {
       this.log("Abriendo portal SAT...");
+      await page.goto(SAT_URL);
+      await page.waitForLoadState("load");
 
       this.log("Haciendo clic en 'e.firma'...");
       const efirmaBtn = page.locator("#buttonFiel");
@@ -112,24 +78,9 @@ class SATClient {
       await page.waitForTimeout(5000);
 
       const currentUrl = page.url();
-      const errorUrl = currentUrl.toLowerCase().includes("error")
-        || currentUrl.toLowerCase().includes("bloqueado")
-        || currentUrl.toLowerCase().includes("suspender")
-        || currentUrl.toLowerCase().includes("mantenimiento");
-      if (errorUrl) {
+      if (currentUrl.toLowerCase().includes("error")) {
         this.log("Error de autenticación - revisa certificados y password");
-        return { ok: false, msg: "Error de autenticación en el SAT. Revisa tus certificados." };
-      }
-
-      const bodyText = await page.evaluate(() => document.body.innerText.toLowerCase());
-      if (bodyText.includes("vencido") || bodyText.includes("revocado")) {
-        return { ok: false, msg: "El certificado está vencido o revocado." };
-      }
-      if (bodyText.includes("no corresponde")) {
-        return { ok: false, msg: "El archivo de llave no corresponde al certificado." };
-      }
-      if (bodyText.includes("no es válida") || bodyText.includes("no es válido") || bodyText.includes("incorrecta")) {
-        return { ok: false, msg: "Contraseña incorrecta." };
+        return { ok: false, msg: "Error de autenticación" };
       }
 
       this.log("Inicio de sesión exitoso");
