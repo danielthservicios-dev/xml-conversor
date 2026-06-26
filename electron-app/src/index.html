@@ -159,6 +159,13 @@
             <button class="btn small" id="cv-btn-output">Examinar</button>
           </div>
         </div>
+        <div class="form-row">
+          <label>Tipo de conversión:</label>
+          <div class="radio-group">
+            <label><input type="radio" name="cv-mode" value="general" checked /> General (todos los CFDI)</label>
+            <label><input type="radio" name="cv-mode" value="pagos" /> Solo Complementos de Pago</label>
+          </div>
+        </div>
         <div class="form-actions">
           <button class="btn primary" id="cv-btn-convert" disabled>Convertir a Excel</button>
           <span id="cv-status"></span>

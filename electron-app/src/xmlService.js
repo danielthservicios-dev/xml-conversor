@@ -53,7 +53,7 @@ function parseCFDI(filePath) {
 
     const tipo = comprobante["@_TipoDeComprobante"] || "";
     if (tipo === "P") {
-      return parsePagoCFDI(comprobante, filePath);
+      return [parsePagoCFDIGeneral(comprobante, filePath)];
     }
     return [parseNormalCFDI(comprobante, filePath)];
   } catch {
@@ -426,6 +426,110 @@ function parsePagoCFDI(comprobante, filePath) {
   return rows.length > 0 ? rows : null;
 }
 
+function parsePagoCFDIGeneral(comprobante, filePath) {
+  const emisor = findKey(comprobante,
+    "cfdi:Emisor", "cfdi33:Emisor", "cfdi40:Emisor", "Emisor"
+  ) || {};
+  const receptor = findKey(comprobante,
+    "cfdi:Receptor", "cfdi33:Receptor", "cfdi40:Receptor", "Receptor"
+  ) || {};
+
+  const complemento = findKey(comprobante,
+    "cfdi:Complemento", "cfdi33:Complemento", "cfdi40:Complemento", "Complemento"
+  );
+
+  let tfdUUID = "";
+  if (complemento) {
+    const tfd = findKey(complemento,
+      "tfd:TimbreFiscalDigital", "TimbreFiscalDigital"
+    );
+    if (tfd) tfdUUID = tfd["@_UUID"] || "";
+  }
+
+  const pagos = complemento ? findKey(complemento,
+    "pago20:Pagos", "pago10:Pagos", "Pagos"
+  ) : null;
+
+  let montoTotalPagos = 0;
+  let fechaPago = "";
+  let formaPagoP = "";
+  let monedaP = "";
+  let tipoCambioP = "";
+  let montoP = "";
+
+  if (pagos) {
+    const totales = findKey(pagos,
+      "pago20:Totales", "pago10:Totales", "Totales"
+    ) || {};
+    montoTotalPagos = parseFloat(totales["@_MontoTotalPagos"] || "0");
+
+    const pagosList = safeArray(findKey(pagos,
+      "pago20:Pago", "pago10:Pago", "Pago"
+    ));
+    if (pagosList.length > 0) {
+      const firstPago = pagosList[0];
+      fechaPago = firstPago["@_FechaPago"] || "";
+      formaPagoP = firstPago["@_FormaDePagoP"] || "";
+      monedaP = firstPago["@_MonedaP"] || "";
+      tipoCambioP = firstPago["@_TipoCambioP"] || "";
+      montoP = firstPago["@_Monto"] || "";
+    }
+  }
+
+  return {
+    archivo: filePath,
+    version: comprobante["@_Version"] || "",
+    tipo: "P",
+    metodo: comprobante["@_MetodoPago"] || "",
+    formaPago: formaPagoP,
+    usoCFDI: receptor["@_UsoCFDI"] || "",
+    uuid: tfdUUID,
+    folio: "",
+    serie: "",
+    fecha: fechaPago,
+    rfcEmisor: emisor["@_Rfc"] || "",
+    nombreEmisor: emisor["@_Nombre"] || "",
+    rfcReceptor: receptor["@_Rfc"] || "",
+    nombreReceptor: receptor["@_Nombre"] || "",
+    descripcion: "Complemento de Pago",
+    regimen: emisor["@_RegimenFiscal"] || "",
+    subtotal: montoTotalPagos,
+    descuento: 0,
+    subtotalReal: montoTotalPagos,
+    baseIVA16: 0, iva16: 0,
+    baseIVA8: 0, iva8: 0,
+    iva0Base: 0,
+    exentoBase: 0,
+    baseIEPS: 0, ieps: 0,
+    importeRetIva: 0,
+    importeRetISR: 0,
+    total: montoTotalPagos,
+    moneda: comprobante["@_Moneda"] || "",
+    tipoCambio: comprobante["@_TipoCambio"] || "",
+    exportacion: comprobante["@_Exportacion"] || "",
+    lugarExpedicion: comprobante["@_LugarExpedicion"] || "",
+    tipo2: "",
+    poliza: "",
+    observaciones: "",
+    comFechaPago: fechaPago,
+    compFormaPago: formaPagoP,
+    cfdiRelEg: "",
+    tipoRelacion: "",
+    cfdiRelPag: "",
+    cp: receptor["@_DomicilioFiscalReceptor"] || receptor["@_CP"] || "",
+    monedaP,
+    montoP,
+    tipoCambioP,
+    numParcialidad: "",
+    impSaldoAnt: 0,
+    impPagado: 0,
+    impSaldoInsoluto: 0,
+    monedaDR: "",
+    objetoImpDR: "",
+    equivalenciaDR: "",
+  };
+}
+
 function parseFolder(folderPath) {
   const valid = [];
   const invalid = [];
@@ -438,6 +542,54 @@ function parseFolder(folderPath) {
         walk(fullPath);
       } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".xml")) {
         const rows = parseCFDI(fullPath);
+        if (rows && rows.length > 0 && rows[0]) valid.push(...rows);
+        else invalid.push(entry.name);
+      }
+    }
+  }
+
+  walk(folderPath);
+  return { valid, invalid };
+}
+
+function parseCFDIPagos(filePath) {
+  let xml;
+  try {
+    xml = fs.readFileSync(filePath, "utf-8");
+  } catch {
+    return null;
+  }
+  try {
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: "@_",
+    });
+    const json = parser.parse(xml);
+    const comprobante = findKey(json,
+      "cfdi:Comprobante", "cfdi33:Comprobante", "cfdi40:Comprobante",
+      "Comprobante"
+    );
+    if (!comprobante) return null;
+    const tipo = comprobante["@_TipoDeComprobante"] || "";
+    if (tipo !== "P") return null;
+    return parsePagoCFDI(comprobante, filePath);
+  } catch {
+    return null;
+  }
+}
+
+function parseFolderPagos(folderPath) {
+  const valid = [];
+  const invalid = [];
+
+  function walk(dir) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(fullPath);
+      } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".xml")) {
+        const rows = parseCFDIPagos(fullPath);
         if (rows && rows.length > 0 && rows[0]) valid.push(...rows);
         else invalid.push(entry.name);
       }
@@ -519,4 +671,4 @@ async function generateExcel(rows, outputPath) {
   await wb.xlsx.writeFile(outputPath);
 }
 
-module.exports = { parseCFDI, parseFolder, generateExcel, findKey, safeArray };
+module.exports = { parseCFDI, parseFolder, parseFolderPagos, generateExcel, findKey, safeArray };

@@ -3,7 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const { initDB, getDB } = require("./src/database");
 const { SATClient } = require("./src/satClient");
-const { parseFolder, generateExcel } = require("./src/xmlService");
+const { parseFolder, parseFolderPagos, generateExcel } = require("./src/xmlService");
 
 let mainWindow;
 let satClient = null;
@@ -231,6 +231,30 @@ ipcMain.handle("xml:convertFolder", async (_, folderPath, outputPath) => {
     return {
       ok: true,
       msg: `Excel generado: ${destPath}`,
+      total: result.valid.length + result.invalid.length,
+      valid: result.valid.length,
+      invalid: result.invalid.length,
+      outputPath: destPath,
+    };
+  } catch (e) {
+    return { ok: false, msg: e.message };
+  }
+});
+
+ipcMain.handle("xml:convertFolderPagos", async (_, folderPath, outputPath) => {
+  try {
+    const result = parseFolderPagos(folderPath);
+    if (result.valid.length === 0) {
+      return { ok: false, msg: "No se encontraron Complementos de Pago" };
+    }
+    let destPath = outputPath || path.join(folderPath, `complementos_pago_${result.valid.length}_xmls.xlsx`);
+    if (fs.existsSync(destPath) && fs.statSync(destPath).isDirectory()) {
+      destPath = path.join(destPath, `complementos_pago_${result.valid.length}_xmls.xlsx`);
+    }
+    await generateExcel(result.valid, destPath);
+    return {
+      ok: true,
+      msg: `Excel de Complementos de Pago generado: ${destPath}`,
       total: result.valid.length + result.invalid.length,
       valid: result.valid.length,
       invalid: result.invalid.length,

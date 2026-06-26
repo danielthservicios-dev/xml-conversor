@@ -230,6 +230,7 @@ async function runDownload(convertAfter = false) {
     log(logEl, `Error de autenticación: ${loginResult.msg}`);
     statusEl.textContent = "Error de autenticación";
     statusEl.className = "status-error";
+    await window.api.satClose();
     btnStart.disabled = false;
     btnConvert.disabled = false;
     return;
@@ -322,6 +323,8 @@ async function runDownload(convertAfter = false) {
     statusEl.textContent = "Error";
     statusEl.className = "status-error";
   } finally {
+    await window.api.satClose();
+    await window.api.notify("SAT XML Conversor", `Descarga completada para ${selectedClient.rfc}`);
     btnStart.disabled = false;
     btnConvert.disabled = false;
     isDownloading = false;
@@ -411,7 +414,9 @@ document.getElementById("cv-btn-convert").addEventListener("click", async () => 
   progress.style.width = "20%";
 
   const outputPath = document.getElementById("cv-output").value;
-  const result = await window.api.convertFolder(inputPath, outputPath);
+  const mode = document.querySelector('input[name="cv-mode"]:checked').value;
+  const fn = mode === "pagos" ? window.api.convertFolderPagos : window.api.convertFolder;
+  const result = await fn(inputPath, outputPath);
 
   if (result.ok) {
     progress.style.width = "100%";
