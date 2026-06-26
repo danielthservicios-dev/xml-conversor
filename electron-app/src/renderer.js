@@ -362,11 +362,20 @@ async function retrieveDownloads() {
 }
 
 function clearDownloadForm() {
+  selectedClient = null;
+  document.getElementById("dl-cliente").value = "";
+  document.getElementById("dl-rfc").textContent = "";
+  document.getElementById("dl-cer").textContent = "";
+  document.getElementById("dl-key").textContent = "";
+  document.getElementById("dl-password").textContent = "";
   document.getElementById("dl-log").value = "";
   document.getElementById("dl-status").textContent = "";
   document.getElementById("dl-status").className = "";
   document.getElementById("dl-progress").value = 0;
   document.getElementById("dl-progress-text").textContent = "0/0";
+  document.getElementById("dl-btn-start").disabled = true;
+  document.getElementById("dl-btn-convert").disabled = true;
+  document.getElementById("dl-btn-retrieve").disabled = true;
   if (!isDownloading) window.api.satClose();
 }
 
