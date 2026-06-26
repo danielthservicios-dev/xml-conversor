@@ -81,6 +81,8 @@ describe("parseCFDI", () => {
     expect(row.lugarExpedicion).toBe("20000");
     expect(row.monedaDR).toBe("");
     expect(row.cfdiRelPag).toBe("");
+    expect(row.tipoRelacion).toBe("");
+    expect(row.montoP).toBe("");
   });
 
   test("parses CFDI 4.0 with exento IVA (factura_exento.xml)", () => {
@@ -197,6 +199,7 @@ describe("parseCFDI", () => {
     expect(row.ieps).toBe(0);
     expect(row.subtotal).toBe(500);
     expect(row.total).toBe(500);
+    expect(row.montoP).toBe("500.00");
   });
 
   test("returns null for malformed XML", () => {
@@ -243,8 +246,8 @@ describe("parseCFDI", () => {
       "importeRetIva", "importeRetISR",
       "total", "moneda", "tipoCambio", "exportacion", "lugarExpedicion",
       "tipo2", "poliza", "observaciones",
-      "comFechaPago", "compFormaPago", "cfdiRelEg", "cfdiRelPag", "cp",
-      "monedaP", "tipoCambioP", "numParcialidad", "impSaldoAnt",
+      "comFechaPago", "compFormaPago", "cfdiRelEg", "tipoRelacion", "cfdiRelPag", "cp",
+      "monedaP", "tipoCambioP", "montoP", "numParcialidad", "impSaldoAnt",
       "impPagado", "impSaldoInsoluto", "monedaDR", "objetoImpDR",
       "equivalenciaDR",
     ];
@@ -266,9 +269,10 @@ describe("parseFolder", () => {
     expect(validNames).toContain("factura_ingreso.xml");
     expect(validNames).toContain("factura_tasa0.xml");
     expect(validNames).toContain("factura_tasa0_ret.xml");
+    expect(validNames).toContain("factura_multi_concepto.xml");
     expect(validNames).toContain("cfdi33.xml");
     expect(validNames).toContain("pago.xml");
-    expect(result.invalid).toContain("no_uuid.xml");
+    expect(validNames).toContain("no_uuid.xml");
     expect(result.invalid).toContain("malformed.xml");
     expect(result.invalid).toContain("empty.xml");
   });
@@ -317,7 +321,7 @@ describe("generateExcel", () => {
     const ws = wb.getWorksheet("Facturas");
     expect(ws).toBeDefined();
     expect(ws.rowCount).toBe(2);
-    expect(ws.getRow(1).cellCount).toBe(51);
+    expect(ws.getRow(1).cellCount).toBe(53);
     expect(ws.getCell(1, 1).value).toBe("Archivo");
     expect(ws.getCell(1, 7).value).toBe("UUID");
     expect(ws.getCell(1, 11).value).toBe("RFCEmisor");

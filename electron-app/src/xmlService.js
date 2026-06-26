@@ -168,10 +168,12 @@ function parseNormalCFDI(comprobante, filePath) {
         for (const t of safeArray(findKey(traslados,
           "cfdi:Traslado", "cfdi33:Traslado", "cfdi40:Traslado", "Traslado"
         ))) {
-          const { impuesto, tasa, base, importe } = processTraslado(t);
+          const { impuesto, tasa, base, importe, tipoFactor } = processTraslado(t);
           if (impuesto === IMPIVA) {
             ivaTrasladadoSum += importe;
-            if (Math.abs(tasa - 0.16) < 0.001) {
+            if (tipoFactor === "Exento") {
+              exentoBase += base;
+            } else if (Math.abs(tasa - 0.16) < 0.001) {
               iva16 += importe;
               baseIVA16 += base;
             } else if (Math.abs(tasa - 0.08) < 0.001) {
@@ -207,11 +209,13 @@ function parseNormalCFDI(comprobante, filePath) {
   }
 
   let cfdiRelEg = "";
+  let tipoRelacion = "";
   if (comprobante["@_TipoDeComprobante"] === "E") {
     const relacionados = findKey(comprobante,
       "cfdi:CfdiRelacionados", "cfdi33:CfdiRelacionados", "cfdi40:CfdiRelacionados", "CfdiRelacionados"
     );
     if (relacionados) {
+      tipoRelacion = relacionados["@_TipoRelacion"] || "";
       const relList = safeArray(findKey(relacionados,
         "cfdi:CfdiRelacionado", "cfdi33:CfdiRelacionado", "cfdi40:CfdiRelacionado", "CfdiRelacionado"
       ));
@@ -261,8 +265,10 @@ function parseNormalCFDI(comprobante, filePath) {
     comFechaPago: "",
     compFormaPago: "",
     cfdiRelEg,
+    tipoRelacion,
     cfdiRelPag: "",
     cp: receptor["@_DomicilioFiscalReceptor"] || receptor["@_CP"] || "",
+    montoP: "",
     monedaP: "",
     tipoCambioP: "",
     numParcialidad: "",
@@ -315,6 +321,7 @@ function parsePagoCFDI(comprobante, filePath) {
     const formaPagoP = pago["@_FormaDePagoP"] || "";
     const monedaP = pago["@_MonedaP"] || "";
     const tipoCambioP = pago["@_TipoCambioP"] || "";
+    const montoP = pago["@_Monto"] || "";
 
     const doctos = safeArray(findKey(pago,
       "pago20:DoctoRelacionado", "pago10:DoctoRelacionado", "DoctoRelacionado"
@@ -399,9 +406,11 @@ function parsePagoCFDI(comprobante, filePath) {
         comFechaPago: fechaPago,
         compFormaPago: formaPagoP,
         cfdiRelEg: "",
+        tipoRelacion: "",
         cfdiRelPag: idDocumento,
         cp: receptor["@_DomicilioFiscalReceptor"] || receptor["@_CP"] || "",
         monedaP,
+        montoP,
         tipoCambioP,
         numParcialidad: docto["@_NumParcialidad"] || "",
         impSaldoAnt: parseFloat(docto["@_ImpSaldoAnt"] || "0"),
@@ -429,7 +438,7 @@ function parseFolder(folderPath) {
         walk(fullPath);
       } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".xml")) {
         const rows = parseCFDI(fullPath);
-        if (rows && rows.length > 0 && rows[0] && rows[0].uuid) valid.push(...rows);
+        if (rows && rows.length > 0 && rows[0]) valid.push(...rows);
         else invalid.push(entry.name);
       }
     }
@@ -449,8 +458,8 @@ const EXCEL_HEADERS = [
   "BaseExento", "BaseIEPS", "IEPS", "ImporteRetIVA", "ImporteRetISR",
   "Total", "Moneda", "TipoCambio", "Exportacion", "LugarExpedicion",
   "Tipo2", "Poliza", "Observaciones", "Com_FechaPago", "Comp_FormaPago",
-  "CFDIRel_Eg", "CFDIRel_Pag", "CP", "MonedaP", "TipoCambioP",
-  "NumParcialidad", "ImpSaldoAnt", "ImpPagado", "ImpSaldoInsoluto",
+  "CFDIRel_Eg", "TipoRelacion", "CFDIRel_Pag", "CP", "MonedaP", "TipoCambioP",
+  "MontoP", "NumParcialidad", "ImpSaldoAnt", "ImpPagado", "ImpSaldoInsoluto",
   "MonedaDR", "ObjetoImpDR", "EquivalenciaDR",
 ];
 
@@ -465,8 +474,8 @@ function rowValues(r) {
     r.importeRetIva, r.importeRetISR,
     r.total, r.moneda, r.tipoCambio, r.exportacion, r.lugarExpedicion,
     r.tipo2, r.poliza, r.observaciones, r.comFechaPago, r.compFormaPago,
-    r.cfdiRelEg, r.cfdiRelPag, r.cp, r.monedaP, r.tipoCambioP,
-    r.numParcialidad, r.impSaldoAnt, r.impPagado, r.impSaldoInsoluto,
+    r.cfdiRelEg, r.tipoRelacion, r.cfdiRelPag, r.cp, r.monedaP, r.tipoCambioP,
+    r.montoP, r.numParcialidad, r.impSaldoAnt, r.impPagado, r.impSaldoInsoluto,
     r.monedaDR, r.objetoImpDR, r.equivalenciaDR,
   ];
 }
@@ -497,7 +506,7 @@ async function generateExcel(rows, outputPath) {
     col.width = Math.min(maxLen + 3, 50);
   });
 
-  const moneyColumns = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 46, 47, 48];
+  const moneyColumns = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 46, 48, 49, 50];
   for (let i = 2; i <= rows.length + 1; i++) {
     for (const col of moneyColumns) {
       const cell = ws.getCell(i, col);

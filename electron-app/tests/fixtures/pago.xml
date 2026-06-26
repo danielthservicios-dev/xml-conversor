@@ -9,7 +9,7 @@
     <tfd:TimbreFiscalDigital xmlns:tfd="http://www.sat.gob.mx/TimbreFiscalDigital" Version="1.1" UUID="pago-uuid-0000-0000-000000000001" FechaTimbrado="2026-06-10T12:05:00" RfcProvCertif="SPR190613I52" />
     <pago20:Pagos xmlns:pago20="http://www.sat.gob.mx/Pagos20" Version="2.0">
       <pago20:Totales MontoTotalPagos="500.00" />
-      <pago20:Pago FechaPago="2026-06-10T12:00:00" FormaDePagoP="03" MonedaP="MXN" TipoCambioP="1">
+      <pago20:Pago FechaPago="2026-06-10T12:00:00" FormaDePagoP="03" MonedaP="MXN" TipoCambioP="1" Monto="500.00">
         <pago20:DoctoRelacionado IdDocumento="factura-uuid-0000-0000-000000000001" Folio="F001" Serie="A" MonedaDR="MXN" NumParcialidad="1" ImpSaldoAnt="500.00" ImpPagado="500.00" ImpSaldoInsoluto="0" ObjetoImpDR="02">
           <pago20:ImpuestosDR>
             <pago20:TrasladosDR>
