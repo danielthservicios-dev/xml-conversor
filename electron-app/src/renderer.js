@@ -231,6 +231,7 @@ async function runDownload(convertAfter = false) {
     statusEl.textContent = "Error de autenticación";
     statusEl.className = "status-error";
     await window.api.satClose();
+    await window.api.notify("SAT XML Conversor", "Error de autenticación. Debes volver a iniciar el proceso.");
     btnStart.disabled = false;
     btnConvert.disabled = false;
     return;
@@ -270,6 +271,7 @@ async function runDownload(convertAfter = false) {
     }
     if (!navResult.ok) {
       log(logEl, `Error al navegar: ${navResult.msg}`);
+      await window.api.notify("SAT XML Conversor", "Error al navegar en el SAT. Debes volver a iniciar el proceso.");
       failCount++;
       continue;
     }
@@ -286,6 +288,7 @@ async function runDownload(convertAfter = false) {
       } else {
         failCount++;
         log(logEl, `ERROR: ${result.msg}`);
+        await window.api.notify("SAT XML Conversor", "Error en descarga del SAT. Debes volver a iniciar el proceso.");
       }
 
       completedPeriods++;
@@ -318,13 +321,14 @@ async function runDownload(convertAfter = false) {
     }
   }
 
+    await window.api.notify("SAT XML Conversor", `Descarga completada para ${selectedClient.rfc}`);
   } catch (e) {
     log(logEl, `Error inesperado: ${e.message}`);
     statusEl.textContent = "Error";
     statusEl.className = "status-error";
+    await window.api.notify("SAT XML Conversor", "Error inesperado. Debes volver a iniciar el proceso.");
   } finally {
     await window.api.satClose();
-    await window.api.notify("SAT XML Conversor", `Descarga completada para ${selectedClient.rfc}`);
     btnStart.disabled = false;
     btnConvert.disabled = false;
     isDownloading = false;
