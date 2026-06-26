@@ -161,6 +161,20 @@ ipcMain.handle("dialog:selectFolderXML", async () => {
   return result.canceled ? null : result.filePaths[0];
 });
 
+// ─── Notifications ──────────────────────────────────────────────
+
+ipcMain.handle("app:notify", (_, title, body) => {
+  const { Notification } = require("electron");
+  if (Notification.isSupported()) {
+    new Notification({ title, body }).show();
+  }
+  if (mainWindow) {
+    mainWindow.show();
+    mainWindow.focus();
+  }
+  return { ok: true };
+});
+
 // ─── SAT Download ────────────────────────────────────────────────────
 
 ipcMain.handle("sat:login", async (_, clienteId) => {
