@@ -354,13 +354,11 @@ async function retrieveDownloads() {
   }
 }
 
-function clearDownloadForm() {
-  document.getElementById("dl-log").value = "";
-  document.getElementById("dl-status").textContent = "";
-  document.getElementById("dl-status").className = "";
-  document.getElementById("dl-progress").value = 0;
-  document.getElementById("dl-progress-text").textContent = "0/0";
-  if (!isDownloading) window.api.satClose();
+async function clearDownloadForm() {
+  if (!isDownloading) {
+    await window.api.satClose();
+  }
+  location.reload();
 }
 
 document.getElementById("dl-btn-start").addEventListener("click", () => runDownload(false));
