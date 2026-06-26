@@ -169,6 +169,33 @@ tr.selected { background: #c8e6c9; }
   min-height: 8px;
 }
 
+/* ─── Error Modal ──────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-overlay.hidden { display: none; }
+.modal-box {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  text-align: center;
+}
+.modal-box p {
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  white-space: pre-wrap;
+}
+
 /* ─── Status ──────────────────────────────────────────────────── */
 #dl-status, #cv-status { font-size: 13px; margin-left: 8px; }
 .status-ok { color: var(--primary); }

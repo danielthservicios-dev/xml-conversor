@@ -20,6 +20,21 @@ function log(el, msg) {
   el.scrollTop = el.scrollHeight;
 }
 
+function showErrorModal(message) {
+  document.getElementById("error-modal-text").textContent = message;
+  document.getElementById("error-modal").classList.remove("hidden");
+}
+
+document.getElementById("error-modal-close").addEventListener("click", () => {
+  document.getElementById("error-modal").classList.add("hidden");
+});
+
+document.getElementById("error-modal").addEventListener("click", (e) => {
+  if (e.target === e.currentTarget) {
+    document.getElementById("error-modal").classList.add("hidden");
+  }
+});
+
 // Listen for log messages from main process (Playwright logs)
 window.api.onSatLog((msg) => {
   const logEl = document.getElementById("dl-log");
@@ -231,6 +246,7 @@ async function runDownload(convertAfter = false) {
     statusEl.textContent = "Error de autenticación";
     statusEl.className = "status-error";
     await window.api.notify("SAT XML Conversor", `Error de autenticación: ${loginResult.msg}`);
+    showErrorModal(`Error de autenticación:\n${loginResult.msg}`);
     await window.api.satClose();
     btnStart.disabled = false;
     btnConvert.disabled = false;
@@ -272,6 +288,7 @@ async function runDownload(convertAfter = false) {
     if (!navResult.ok) {
       log(logEl, `Error al navegar: ${navResult.msg}`);
       await window.api.notify("SAT XML Conversor", `Error al navegar en el SAT: ${navResult.msg}`);
+      showErrorModal(`Error al navegar en el SAT:\n${navResult.msg}`);
       failCount++;
       continue;
     }
@@ -324,6 +341,8 @@ async function runDownload(convertAfter = false) {
     log(logEl, `Error inesperado: ${e.message}`);
     statusEl.textContent = "Error";
     statusEl.className = "status-error";
+    await window.api.notify("SAT XML Conversor", `Error inesperado: ${e.message}`);
+    showErrorModal(`Error inesperado:\n${e.message}`);
   } finally {
     await window.api.satClose();
     await window.api.notify("SAT XML Conversor", `Descarga completada para ${selectedClient.rfc}`);
