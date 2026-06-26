@@ -109,42 +109,31 @@ class SATClient {
       await page.locator("#submit").click();
 
       this.log("Esperando autenticación...");
-      await page.waitForTimeout(3000);
+      await page.waitForTimeout(5000);
 
-      page.once("dialog", dialog => {
-        this.log(`Dialog del SAT: ${dialog.message()}`);
-        dialog.accept();
-      });
-
-      const dashboardEl = page.locator("a:has-text('Cerrar sesión'), a:has-text('Consultas'), #menuSuperior");
-      try {
-        await dashboardEl.waitFor({ timeout: 10000 });
-        this.log("Inicio de sesión exitoso");
-        return { ok: true, msg: "Login exitoso" };
-      } catch {
-        const bodyText = await page.evaluate(() => document.body.innerText);
-
-        const currentUrl = page.url().toLowerCase();
-        if (currentUrl.includes("error") || currentUrl.includes("bloqueado")
-          || currentUrl.includes("suspender") || currentUrl.includes("mantenimiento")) {
-          return { ok: false, msg: "Error de autenticación en el SAT. Revisa tus certificados." };
-        }
-
-        const bt = bodyText.toLowerCase();
-        if (bt.includes("vencido") || bt.includes("revocado")) {
-          return { ok: false, msg: "El certificado está vencido o revocado." };
-        }
-        if (bt.includes("no corresponde")) {
-          return { ok: false, msg: "El archivo de llave no corresponde al certificado." };
-        }
-        if (bt.includes("contraseña") || bt.includes("password") || bt.includes("incorrecta")) {
-          return { ok: false, msg: "Contraseña incorrecta." };
-        }
-
-        const lines = bodyText.split("\n").filter(l => l.trim()).slice(-10).join(" | ");
-        this.log("Texto de error del SAT:\n" + bodyText);
-        return { ok: false, msg: `Error del SAT: ${lines || "Error de autenticación"}` };
+      const currentUrl = page.url();
+      const errorUrl = currentUrl.toLowerCase().includes("error")
+        || currentUrl.toLowerCase().includes("bloqueado")
+        || currentUrl.toLowerCase().includes("suspender")
+        || currentUrl.toLowerCase().includes("mantenimiento");
+      if (errorUrl) {
+        this.log("Error de autenticación - revisa certificados y password");
+        return { ok: false, msg: "Error de autenticación en el SAT. Revisa tus certificados." };
       }
+
+      const bodyText = await page.evaluate(() => document.body.innerText.toLowerCase());
+      if (bodyText.includes("vencido") || bodyText.includes("revocado")) {
+        return { ok: false, msg: "El certificado está vencido o revocado." };
+      }
+      if (bodyText.includes("no corresponde")) {
+        return { ok: false, msg: "El archivo de llave no corresponde al certificado." };
+      }
+      if (bodyText.includes("no es válida") || bodyText.includes("no es válido") || bodyText.includes("incorrecta")) {
+        return { ok: false, msg: "Contraseña incorrecta." };
+      }
+
+      this.log("Inicio de sesión exitoso");
+      return { ok: true, msg: "Login exitoso" };
     } catch (e) {
       this.log(`Error durante autenticación: ${e.message}`);
       return { ok: false, msg: e.message };
