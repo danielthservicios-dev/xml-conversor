@@ -14,71 +14,12 @@
     </header>
 
     <nav class="tabs">
-      <button class="tab-btn active" data-tab="clientes">Clientes</button>
-      <button class="tab-btn" data-tab="descargar">Descargar XML</button>
+      <button class="tab-btn active" data-tab="descargar">Descargar XML</button>
+      <button class="tab-btn" data-tab="clientes">Clientes</button>
       <button class="tab-btn" data-tab="convertir">Convertir a Excel</button>
     </nav>
 
-    <section id="tab-clientes" class="tab-content active">
-      <h2>Gestión de Clientes</h2>
-      <div class="client-form">
-        <div class="form-row">
-          <label>RFC:</label>
-          <input type="text" id="cli-rfc" placeholder="Ej: AAA010101AAA" />
-        </div>
-        <div class="form-row">
-          <label>Razón Social:</label>
-          <input type="text" id="cli-razon" placeholder="Nombre del cliente" />
-        </div>
-        <div class="form-row">
-          <label>Certificado .cer:</label>
-          <div class="file-input">
-            <input type="text" id="cli-cer" placeholder="Seleccionar archivo .cer" readonly />
-            <button class="btn small" id="cli-btn-cer">Examinar</button>
-          </div>
-        </div>
-        <div class="form-row">
-          <label>Llave .key:</label>
-          <div class="file-input">
-            <input type="text" id="cli-key" placeholder="Seleccionar archivo .key" readonly />
-            <button class="btn small" id="cli-btn-key">Examinar</button>
-          </div>
-        </div>
-        <div class="form-row">
-          <label>Password:</label>
-          <input type="password" id="cli-password" placeholder="Contraseña de la llave" />
-        </div>
-        <div class="form-row">
-          <label>Carpeta descarga:</label>
-          <div class="file-input">
-            <input type="text" id="cli-descarga" placeholder="Ruta por defecto (opcional)" readonly />
-            <button class="btn small" id="cli-btn-descarga">Examinar</button>
-          </div>
-        </div>
-        <div class="form-actions">
-          <button class="btn primary" id="cli-btn-save">Guardar</button>
-          <button class="btn" id="cli-btn-clear">Limpiar</button>
-          <button class="btn danger" id="cli-btn-delete" disabled>Eliminar</button>
-        </div>
-      </div>
-      <div class="client-list">
-        <h3>Clientes registrados</h3>
-        <table id="cli-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>RFC</th>
-              <th>Razón Social</th>
-              <th>Certificado</th>
-              <th>Llave</th>
-            </tr>
-          </thead>
-          <tbody id="cli-tbody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section id="tab-descargar" class="tab-content">
+    <section id="tab-descargar" class="tab-content active">
       <h2>Descarga de XML desde el SAT</h2>
       <div class="download-form">
         <div class="form-row">
@@ -139,6 +80,65 @@
       </div>
       <div class="log-box">
         <textarea id="dl-log" readonly placeholder="Log de descarga..."></textarea>
+      </div>
+    </section>
+
+    <section id="tab-clientes" class="tab-content">
+      <h2>Gestión de Clientes</h2>
+      <div class="client-form">
+        <div class="form-row">
+          <label>RFC:</label>
+          <input type="text" id="cli-rfc" placeholder="Ej: AAA010101AAA" />
+        </div>
+        <div class="form-row">
+          <label>Razón Social:</label>
+          <input type="text" id="cli-razon" placeholder="Nombre del cliente" />
+        </div>
+        <div class="form-row">
+          <label>Certificado .cer:</label>
+          <div class="file-input">
+            <input type="text" id="cli-cer" placeholder="Seleccionar archivo .cer" readonly />
+            <button class="btn small" id="cli-btn-cer">Examinar</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Llave .key:</label>
+          <div class="file-input">
+            <input type="text" id="cli-key" placeholder="Seleccionar archivo .key" readonly />
+            <button class="btn small" id="cli-btn-key">Examinar</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <label>Password:</label>
+          <input type="password" id="cli-password" placeholder="Contraseña de la llave" />
+        </div>
+        <div class="form-row">
+          <label>Carpeta descarga:</label>
+          <div class="file-input">
+            <input type="text" id="cli-descarga" placeholder="Ruta por defecto (opcional)" readonly />
+            <button class="btn small" id="cli-btn-descarga">Examinar</button>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn primary" id="cli-btn-save">Guardar</button>
+          <button class="btn" id="cli-btn-clear">Limpiar</button>
+          <button class="btn danger" id="cli-btn-delete" disabled>Eliminar</button>
+        </div>
+      </div>
+      <div class="client-list">
+        <h3>Clientes registrados</h3>
+        <table id="cli-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>RFC</th>
+              <th>Razón Social</th>
+              <th>Certificado</th>
+              <th>Llave</th>
+            </tr>
+          </thead>
+          <tbody id="cli-tbody"></tbody>
+        </table>
       </div>
     </section>
 
