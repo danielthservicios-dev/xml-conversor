@@ -671,4 +671,4 @@ async function generateExcel(rows, outputPath) {
   await wb.xlsx.writeFile(outputPath);
 }
 
-module.exports = { parseCFDI, parseFolder, parseFolderPagos, generateExcel, findKey, safeArray };
+module.exports = { parseCFDI, parseCFDIPagos, parseFolder, parseFolderPagos, generateExcel, findKey, safeArray };

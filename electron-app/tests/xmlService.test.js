@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const os = require("os");
-const { parseCFDI, parseFolder, generateExcel, findKey, safeArray } = require("../src/xmlService");
+const { parseCFDI, parseCFDIPagos, parseFolder, generateExcel, findKey, safeArray } = require("../src/xmlService");
 
 const FIXTURES_DIR = path.join(__dirname, "fixtures");
 
@@ -172,9 +172,39 @@ describe("parseCFDI", () => {
     expect(row.lugarExpedicion).toBe("20000");
   });
 
-  test("parses payment CFDI (pago.xml) - Tipo P", () => {
+  test("parses payment CFDI (pago.xml) - Tipo P (vista general)", () => {
     const filePath = path.join(FIXTURES_DIR, "pago.xml");
     const rows = parseCFDI(filePath);
+    expect(rows).not.toBeNull();
+    expect(rows.length).toBe(1);
+    const row = rows[0];
+    expect(row.tipo).toBe("P");
+    expect(row.uuid).toBe("pago-uuid-0000-0000-000000000001");
+    expect(row.rfcEmisor).toBe("EKU9003173C9");
+    expect(row.comFechaPago).toBe("2026-06-10T12:00:00");
+    expect(row.compFormaPago).toBe("03");
+    expect(row.cfdiRelPag).toBe("");
+    expect(row.monedaP).toBe("MXN");
+    expect(row.tipoCambioP).toBe("1");
+    expect(row.numParcialidad).toBe("");
+    expect(row.impSaldoAnt).toBe(0);
+    expect(row.impPagado).toBe(0);
+    expect(row.impSaldoInsoluto).toBe(0);
+    expect(row.baseIVA16).toBe(0);
+    expect(row.iva16).toBe(0);
+    expect(row.iva8).toBe(0);
+    expect(row.iva0Base).toBe(0);
+    expect(row.exentoBase).toBe(0);
+    expect(row.baseIEPS).toBe(0);
+    expect(row.ieps).toBe(0);
+    expect(row.subtotal).toBe(500);
+    expect(row.total).toBe(500);
+    expect(row.montoP).toBe("500.00");
+  });
+
+  test("parses payment CFDI (pago.xml) - Tipo P (detalle por DoctoRelacionado)", () => {
+    const filePath = path.join(FIXTURES_DIR, "pago.xml");
+    const rows = parseCFDIPagos(filePath);
     expect(rows).not.toBeNull();
     expect(rows.length).toBe(1);
     const row = rows[0];
