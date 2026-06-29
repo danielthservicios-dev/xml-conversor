@@ -34,6 +34,8 @@ jobs:
         with:
           node-version: 20
       - run: npm install
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}\electron-app\browsers
       - name: Instalar Chromium para Playwright
         run: npx playwright install chromium
         env:
