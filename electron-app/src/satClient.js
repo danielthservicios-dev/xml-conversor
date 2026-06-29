@@ -30,7 +30,19 @@ class SATClient {
   }
 
   async _initBrowser() {
-    process.env.PLAYWRIGHT_BROWSERS_PATH = "0";
+    const bundledBrowsers = path.join(process.resourcesPath || '', 'browsers');
+    let hasChromium = false;
+    try {
+      if (fs.existsSync(bundledBrowsers)) {
+        const entries = fs.readdirSync(bundledBrowsers);
+        hasChromium = entries.some(e => e.startsWith('chromium'));
+      }
+    } catch (e) {}
+    if (hasChromium) {
+      process.env.PLAYWRIGHT_BROWSERS_PATH = bundledBrowsers;
+    } else if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
+      process.env.PLAYWRIGHT_BROWSERS_PATH = "0";
+    }
     this.browser = await chromium.launch({ headless: false });
     const context = await this.browser.newContext({
       acceptDownloads: true,
