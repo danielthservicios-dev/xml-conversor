@@ -603,7 +603,7 @@ function parseFolderPagos(folderPath) {
 // ─── Excel generation ──────────────────────────────────────────────
 
 const EXCEL_HEADERS = [
-  "Archivo", "Version", "Tipo", "MetodoPago", "FormaPago", "UsoCFDI", "UUID",
+  "No.", "Archivo", "Version", "Tipo", "MetodoPago", "FormaPago", "UsoCFDI", "UUID",
   "Folio", "Serie", "Fecha", "RFCEmisor", "NombreEmisor", "RFCReceptor",
   "NombreReceptor", "Descripcion", "RegimenFiscal", "SubTotal", "Descuento",
   "Subtotal Real", "BaseIVA16", "IVA16", "BaseIVA8", "IVA8", "IVA0",
@@ -615,8 +615,9 @@ const EXCEL_HEADERS = [
   "MonedaDR", "ObjetoImpDR", "EquivalenciaDR",
 ];
 
-function rowValues(r) {
+function rowValues(r, num) {
   return [
+    num || "",
     r.archivo, r.version, r.tipo, r.metodo, r.formaPago, r.usoCFDI, r.uuid,
     r.folio, r.serie, r.fecha, r.rfcEmisor, r.nombreEmisor, r.rfcReceptor,
     r.nombreReceptor, r.descripcion, r.regimen, r.subtotal, r.descuento,
@@ -633,6 +634,8 @@ function rowValues(r) {
 }
 
 async function generateExcel(rows, outputPath) {
+  rows.sort((a, b) => a.fecha.localeCompare(b.fecha));
+
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Facturas");
 
@@ -644,8 +647,8 @@ async function generateExcel(rows, outputPath) {
     fgColor: { argb: "FFE8F5E9" },
   };
 
-  for (const r of rows) {
-    ws.addRow(rowValues(r));
+  for (let i = 0; i < rows.length; i++) {
+    ws.addRow(rowValues(rows[i], i + 1));
   }
 
   ws.columns.forEach((col, i) => {
@@ -658,7 +661,7 @@ async function generateExcel(rows, outputPath) {
     col.width = Math.min(maxLen + 3, 50);
   });
 
-  const moneyColumns = [17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 46, 48, 49, 50];
+  const moneyColumns = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 47, 49, 50, 51];
   for (let i = 2; i <= rows.length + 1; i++) {
     for (const col of moneyColumns) {
       const cell = ws.getCell(i, col);

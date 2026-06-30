@@ -351,10 +351,11 @@ describe("generateExcel", () => {
     const ws = wb.getWorksheet("Facturas");
     expect(ws).toBeDefined();
     expect(ws.rowCount).toBe(2);
-    expect(ws.getRow(1).cellCount).toBe(53);
-    expect(ws.getCell(1, 1).value).toBe("Archivo");
-    expect(ws.getCell(1, 7).value).toBe("UUID");
-    expect(ws.getCell(1, 11).value).toBe("RFCEmisor");
+    expect(ws.getRow(1).cellCount).toBe(54);
+    expect(ws.getCell(1, 1).value).toBe("No.");
+    expect(ws.getCell(1, 2).value).toBe("Archivo");
+    expect(ws.getCell(1, 8).value).toBe("UUID");
+    expect(ws.getCell(1, 12).value).toBe("RFCEmisor");
 
     fs.unlinkSync(outputPath);
   });
@@ -374,7 +375,9 @@ describe("generateExcel", () => {
     await wb.xlsx.readFile(outputPath);
     const ws = wb.getWorksheet("Facturas");
     expect(ws.rowCount).toBe(4);
-    expect(ws.getRow(2).getCell(7).value).toBe("dfbaa870-b974-4645-9584-7e8bd5fb685f");
+    expect(ws.getRow(2).getCell(1).value).toBe(1);
+    expect(ws.getRow(3).getCell(1).value).toBe(2);
+    expect(ws.getRow(4).getCell(1).value).toBe(3);
 
     fs.unlinkSync(outputPath);
   });
