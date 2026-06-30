@@ -43,7 +43,11 @@ class SATClient {
     } else if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
       process.env.PLAYWRIGHT_BROWSERS_PATH = "0";
     }
-    this.browser = await chromium.launch({ headless: false });
+    const launchOptions = { headless: false };
+    if (process.platform === 'darwin') {
+      launchOptions.channel = 'chrome';
+    }
+    this.browser = await chromium.launch(launchOptions);
     const context = await this.browser.newContext({
       acceptDownloads: true,
       viewport: { width: 1366, height: 768 },
