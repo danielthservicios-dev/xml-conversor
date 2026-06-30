@@ -209,6 +209,13 @@ document.getElementById("dl-cliente").addEventListener("change", async (e) => {
 
 document.getElementById("dl-btn-refresh").addEventListener("click", loadClientCombo);
 
+document.querySelectorAll('input[name="modo"]').forEach(radio => {
+  radio.addEventListener("change", () => {
+    const isPeriodo = document.querySelector('input[name="modo"]:checked').value === "periodo";
+    document.getElementById("periodo-range").style.display = isPeriodo ? "" : "none";
+  });
+});
+
 let isDownloading = false;
 
 async function runDownload(convertAfter = false) {
@@ -229,8 +236,13 @@ async function runDownload(convertAfter = false) {
 
   const desdeM = Number(document.getElementById("dl-desde-mes").value);
   const desdeA = Number(document.getElementById("dl-desde-anio").value);
-  const hastaM = Number(document.getElementById("dl-hasta-mes").value);
-  const hastaA = Number(document.getElementById("dl-hasta-anio").value);
+  let hastaM = Number(document.getElementById("dl-hasta-mes").value);
+  let hastaA = Number(document.getElementById("dl-hasta-anio").value);
+  const modo = document.querySelector('input[name="modo"]:checked').value;
+  if (modo === "mes") {
+    hastaM = desdeM;
+    hastaA = desdeA;
+  }
   const tipo = document.querySelector('input[name="tipo"]:checked').value;
 
   const homeDir = await window.api.getHomeDir();

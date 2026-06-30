@@ -284,7 +284,9 @@ class SATClient {
             throw new Error("Contenido XML vacío");
           }
 
-          const fileName = `cfdi_${i + 1}.xml`;
+          const uuidMatch = xml.match(/<UUID[^>]*>([a-fA-F0-9\-]{36})<\/UUID>/);
+          const uuid = uuidMatch ? uuidMatch[1] : null;
+          const fileName = uuid ? `${uuid}.xml` : `cfdi_${i + 1}.xml`;
           const destDir = downloadPath || ".";
           const filePath = path.join(destDir, fileName);
           fs.writeFileSync(filePath, xml, "utf-8");
