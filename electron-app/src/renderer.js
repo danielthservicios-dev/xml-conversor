@@ -321,9 +321,14 @@ async function runDownload(convertAfter = false) {
       if (result.ok) {
         successCount++;
         log(logEl, `OK: ${result.msg}`);
+        if (result.failed > 0) {
+          await window.api.notify("SAT XML Conversor", `${MESES[m - 1]} ${y}: ${result.failed} de ${result.total} fallaron`);
+        }
       } else {
         failCount++;
         log(logEl, `ERROR: ${result.msg}`);
+        await window.api.notify("SAT XML Conversor", `Error en ${MESES[m - 1]} ${y}: ${result.msg}`);
+        showErrorModal(`Error descargando ${MESES[m - 1]} ${y}:\n${result.msg}`);
       }
 
       completedPeriods++;

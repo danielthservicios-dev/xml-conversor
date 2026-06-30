@@ -250,7 +250,10 @@ class SATClient {
     if (!page) return { ok: false, msg: "Navegador no inicializado" };
 
     try {
-      const urlParts = await page.locator("span.glyphicon-cloud-download").evaluateAll(
+      await page.locator("span.glyphicon-cloud-download[onclick]").first().waitFor({ timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(2000);
+
+      const urlParts = await page.locator("span.glyphicon-cloud-download[onclick]").evaluateAll(
         (els) => els.map((el) => {
           const onclick = el.getAttribute("onclick");
           const match = onclick.match(/AccionCfdi\('([^']+)'/);
@@ -276,34 +279,49 @@ class SATClient {
       let failed = 0;
 
       for (let i = 0; i < total; i++) {
-        try {
-          this.log(`Descargando ${i + 1}/${total}...`);
-          const resolvedUrl = new URL(urlParts[i], baseUrl).href;
-          const xml = await page.evaluate(async (url) => {
-            const res = await fetch(url);
-            return await res.text();
-          }, resolvedUrl);
+        let success = false;
+        for (let retry = 1; retry <= 2; retry++) {
+          try {
+            this.log(`Descargando ${i + 1}/${total}${retry > 1 ? ` (intento ${retry})` : ''}...`);
+            const resolvedUrl = new URL(urlParts[i], baseUrl).href;
+            const xml = await page.evaluate(async (url) => {
+              const res = await fetch(url);
+              return await res.text();
+            }, resolvedUrl);
 
-          if (!xml || xml.trim().length === 0) {
-            throw new Error("Contenido XML vacío");
+            if (!xml || xml.trim().length === 0) {
+              throw new Error("Contenido XML vacío");
+            }
+
+            const uuidMatch = xml.match(/UUID=["']([a-fA-F0-9\-]{36})["']/);
+            const uuid = uuidMatch ? uuidMatch[1] : null;
+            const fileName = uuid ? `${uuid}.xml` : `cfdi_${i + 1}.xml`;
+            const destDir = downloadPath || ".";
+            const filePath = path.join(destDir, fileName);
+            fs.writeFileSync(filePath, xml, "utf-8");
+            this.log(`✓ ${i + 1}/${total} — ${filePath}`);
+            downloaded++;
+            success = true;
+            break;
+          } catch (e) {
+            if (retry < 2) {
+              this.log(`Reintentando ${i + 1}/${total}...`);
+              await page.waitForTimeout(3000);
+            } else {
+              this.log(`✗ ${i + 1}/${total} — Error: ${e.message}`);
+              failed++;
+            }
           }
-
-          const uuidMatch = xml.match(/UUID=["']([a-fA-F0-9\-]{36})["']/);
-          const uuid = uuidMatch ? uuidMatch[1] : null;
-          const fileName = uuid ? `${uuid}.xml` : `cfdi_${i + 1}.xml`;
-          const destDir = downloadPath || ".";
-          const filePath = path.join(destDir, fileName);
-          fs.writeFileSync(filePath, xml, "utf-8");
-          this.log(`✓ ${i + 1}/${total} — ${filePath}`);
-          downloaded++;
-        } catch (e) {
-          this.log(`✗ ${i + 1}/${total} — Error: ${e.message}`);
-          failed++;
         }
         await page.waitForTimeout(2000);
       }
 
-      this.log(`Periodo completado: ${downloaded} descargadas, ${failed} fallidas`);
+      const summary = `Periodo completado: ${downloaded} OK, ${failed} FALLIDAS`;
+      if (failed > 0) {
+        this.log(`⚠️  ${summary}`);
+      } else {
+        this.log(summary);
+      }
       return { ok: true, downloaded, failed, total };
     } catch (e) {
       return { ok: false, msg: e.message };
