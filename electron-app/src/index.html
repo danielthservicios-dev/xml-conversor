@@ -46,25 +46,30 @@
         <div class="form-row">
           <label>Tipo:</label>
           <div class="radio-group">
-            <label><input type="radio" name="tipo" value="emitidas" checked /> Emitidas</label>
-            <label><input type="radio" name="tipo" value="recibidas" /> Recibidas</label>
+            <label><input type="radio" name="tipo" value="emitidas" /> Emitidas</label>
+            <label><input type="radio" name="tipo" value="recibidas" checked /> Recibidas</label>
             <label><input type="radio" name="tipo" value="ambas" /> Ambas</label>
           </div>
         </div>
         <div class="form-row">
           <label>Modo:</label>
           <div class="radio-group">
-            <label><input type="radio" name="modo" value="periodo" checked /> Período</label>
-            <label><input type="radio" name="modo" value="mes" /> Mes específico</label>
+            <label><input type="radio" name="modo" value="periodo" /> Período</label>
+            <label><input type="radio" name="modo" value="mes" checked /> Mes específico</label>
           </div>
         </div>
-        <div class="form-row periodo" id="periodo-range">
+        <div class="form-row periodo hidden" id="periodo-range">
           <label>Desde:</label>
           <select id="dl-desde-mes"></select>
           <select id="dl-desde-anio"></select>
           <label class="sep">Hasta:</label>
           <select id="dl-hasta-mes"></select>
           <select id="dl-hasta-anio"></select>
+        </div>
+        <div class="form-row periodo" id="periodo-mes">
+          <label>Mes:</label>
+          <select id="dl-mes"></select>
+          <select id="dl-anio"></select>
         </div>
         <div class="form-row">
           <label>Carpeta destino:</label>

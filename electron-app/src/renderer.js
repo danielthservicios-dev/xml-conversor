@@ -153,14 +153,15 @@ const MESES = [
 function populateMonthSelects() {
   const now = new Date();
   const y = now.getFullYear();
-  const selects = ["dl-desde-mes", "dl-hasta-mes"];
+  const selects = ["dl-desde-mes", "dl-hasta-mes", "dl-mes"];
   for (const id of selects) {
     const sel = document.getElementById(id);
     sel.innerHTML = MESES.map((m, i) => `<option value="${i + 1}">${m}</option>`).join("");
-    sel.value = id === "dl-desde-mes" ? "1" : String(now.getMonth() + 1);
+    if (id === "dl-desde-mes") sel.value = "1";
+    else sel.value = String(now.getMonth() + 1);
   }
 
-  const anioSelects = ["dl-desde-anio", "dl-hasta-anio"];
+  const anioSelects = ["dl-desde-anio", "dl-hasta-anio", "dl-anio"];
   for (const id of anioSelects) {
     const sel = document.getElementById(id);
     sel.innerHTML = "";
@@ -212,7 +213,8 @@ document.getElementById("dl-btn-refresh").addEventListener("click", loadClientCo
 document.querySelectorAll('input[name="modo"]').forEach(radio => {
   radio.addEventListener("change", () => {
     const isPeriodo = document.querySelector('input[name="modo"]:checked').value === "periodo";
-    document.getElementById("periodo-range").style.display = isPeriodo ? "" : "none";
+    document.getElementById("periodo-range").classList.toggle("hidden", !isPeriodo);
+    document.getElementById("periodo-mes").classList.toggle("hidden", isPeriodo);
   });
 });
 
@@ -234,14 +236,18 @@ async function runDownload(convertAfter = false) {
   statusEl.textContent = "Iniciando...";
   statusEl.className = "";
 
-  const desdeM = Number(document.getElementById("dl-desde-mes").value);
-  const desdeA = Number(document.getElementById("dl-desde-anio").value);
-  let hastaM = Number(document.getElementById("dl-hasta-mes").value);
-  let hastaA = Number(document.getElementById("dl-hasta-anio").value);
+  let desdeM, desdeA, hastaM, hastaA;
   const modo = document.querySelector('input[name="modo"]:checked').value;
   if (modo === "mes") {
+    desdeM = Number(document.getElementById("dl-mes").value);
+    desdeA = Number(document.getElementById("dl-anio").value);
     hastaM = desdeM;
     hastaA = desdeA;
+  } else {
+    desdeM = Number(document.getElementById("dl-desde-mes").value);
+    desdeA = Number(document.getElementById("dl-desde-anio").value);
+    hastaM = Number(document.getElementById("dl-hasta-mes").value);
+    hastaA = Number(document.getElementById("dl-hasta-anio").value);
   }
   const tipo = document.querySelector('input[name="tipo"]:checked').value;
 
