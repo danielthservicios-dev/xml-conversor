@@ -5,12 +5,10 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "prebuild": "node -e \"require('fs').mkdirSync('browsers', {recursive:true})\"",
-    "build": "npm run prebuild && electron-builder build --publish never",
-    "build:mac": "npm run prebuild && electron-builder build --mac --publish never",
-    "build:win": "npm run prebuild && electron-builder build --win --publish never",
+    "build": "electron-builder build --publish never",
+    "build:mac": "electron-builder build --mac --publish never",
+    "build:win": "electron-builder build --win --publish never",
     "test": "jest",
-    "postinstall": "playwright install chromium",
     "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
   "dependencies": {
@@ -39,16 +37,8 @@
       "assets/**/*",
       "node_modules/**/*"
     ],
-    "extraResources": [
-      {
-        "from": "browsers",
-        "to": "browsers"
-      }
-    ],
     "asarUnpack": [
       "node_modules/better-sqlite3/**",
-      "node_modules/playwright/**",
-      "node_modules/playwright-core/**",
       "node_modules/@fast-csv/**",
       "node_modules/exceljs/**"
     ],

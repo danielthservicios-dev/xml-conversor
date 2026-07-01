@@ -47,21 +47,8 @@ function createWindow() {
   mainWindow.once("ready-to-show", () => mainWindow.show());
 }
 
-function ensurePlaywrightBrowsers() {
-  process.env.PLAYWRIGHT_BROWSERS_PATH = "0";
-  const { chromium } = require("playwright");
-  try {
-    chromium.executablePath();
-    console.log("Chromium ya disponible");
-    return;
-  } catch (e) {
-    console.error("Chromium no encontrado:", e.message);
-  }
-}
-
 app.whenReady().then(() => {
   initDB();
-  ensurePlaywrightBrowsers();
   createWindow();
 });
 

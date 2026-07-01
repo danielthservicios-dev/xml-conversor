@@ -30,24 +30,27 @@ class SATClient {
   }
 
   async _initBrowser() {
-    const bundledBrowsers = path.join(process.resourcesPath || '', 'browsers');
-    let hasChromium = false;
-    try {
-      if (fs.existsSync(bundledBrowsers)) {
-        const entries = fs.readdirSync(bundledBrowsers);
-        hasChromium = entries.some(e => e.startsWith('chromium'));
+    process.env.PLAYWRIGHT_BROWSERS_PATH = "0";
+    const channels = ['chrome', 'msedge'];
+    let lastError;
+    for (const channel of channels) {
+      try {
+        this.browser = await chromium.launch({ headless: false, channel });
+        break;
+      } catch (e) {
+        lastError = e;
+        if (e.message.includes('executable') || e.message.includes('not found')) {
+          continue;
+        }
+        throw e;
       }
-    } catch (e) {}
-    if (hasChromium) {
-      process.env.PLAYWRIGHT_BROWSERS_PATH = bundledBrowsers;
-    } else if (!process.env.PLAYWRIGHT_BROWSERS_PATH) {
-      process.env.PLAYWRIGHT_BROWSERS_PATH = "0";
     }
-    const launchOptions = { headless: false };
-    if (process.platform === 'darwin') {
-      launchOptions.channel = 'chrome';
+    if (!this.browser) {
+      throw new Error(
+        'No se encontró Chrome ni Edge instalados.\n' +
+        'Instala Google Chrome o Microsoft Edge para usar esta aplicación.'
+      );
     }
-    this.browser = await chromium.launch(launchOptions);
     const context = await this.browser.newContext({
       acceptDownloads: true,
       viewport: { width: 1366, height: 768 },
