@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cfdi:Comprobante xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd" Version="4.0" Serie="AYCP" Folio="768" Fecha="2026-06-27T11:09:09" Sello="j+hCfq3G1paFQVve5JmVWLrEWYJkwpU3kBMCHiSzRzHcomRqGY/yLZnVQnfJqLvGuzpmF3k0m5I1Y179UUxRRwrsuhne8SN8LaedZSFlQdDji5cBF4OneS9xWQ9mPui2Ybjbev7TqTDcgWuuVKUgiMDh3eB0ZZh7FwoGt3BH4z8FqbG00bCtbHgKNK4bYVz8yuV1NXGQHiQsenw/m7PZ0m1SsqlR/zLmuhQjo9y9dk9iMPDhvH4NVCupTv+JAJceisiavwR8hEilxtB7EjmCVe4WAVqetW8snDUnj70iakQkzLQV5h2DhMDR7PUSHJV0/TpcdH0HGwGEc4wnQj6Inw==" FormaPago="03" NoCertificado="00001000000721488065" Certificado="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" SubTotal="6206.90" Moneda="MXN" Total="7200.00" TipoDeComprobante="I" Exportacion="01" MetodoPago="PUE" LugarExpedicion="94297" xmlns:cfdi="http://www.sat.gob.mx/cfd/4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <cfdi:Emisor Rfc="SIHA810321RZ7" Nombre="ARACELI SIMON HERNANDEZ" RegimenFiscal="612" />
+  <cfdi:Receptor Rfc="GCT1906252L9" Nombre="GRUPO CONSTRUCTOR TOLMAR" DomicilioFiscalReceptor="91726" RegimenFiscalReceptor="601" UsoCFDI="G01" />
+  <cfdi:Conceptos>
+    <cfdi:Concepto ClaveProdServ="40141700" Cantidad="2" ClaveUnidad="XRO" Unidad="Rollo" Descripcion="MALLA CICLONICA GALVANIZADA A 2.00M DE ALTO X 20ML" ValorUnitario="2206.8975" Importe="4413.795000" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="4413.795000" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="706.207200" />
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+    <cfdi:Concepto ClaveProdServ="40141700" Cantidad="5" ClaveUnidad="H87" Unidad="Pieza" Descripcion="TUBO GALVANIZADO DE 48MM DE DIAMETRO CAL.20 A 6.00M DE LARGO." ValorUnitario="344.8275" Importe="1724.137500" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="1724.137500" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="275.862000" />
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+    <cfdi:Concepto ClaveProdServ="40141700" Cantidad="20" ClaveUnidad="H87" Unidad="Pieza" Descripcion="TORNILLO CABEZA TIPO COCHE DE 5/16 X 1 1/4 GALVANIZADO" ValorUnitario="3.4482" Importe="68.964000" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="68.964000" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="11.034240" />
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+  </cfdi:Conceptos>
+  <cfdi:Impuestos TotalImpuestosTrasladados="993.10">
+    <cfdi:Traslados>
+      <cfdi:Traslado Base="6206.90" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="993.10" />
+    </cfdi:Traslados>
+  </cfdi:Impuestos>
+  <cfdi:Complemento>
+    <tfd:TimbreFiscalDigital xmlns:tfd="http://www.sat.gob.mx/TimbreFiscalDigital" xsi:schemaLocation="http://www.sat.gob.mx/TimbreFiscalDigital http://www.sat.gob.mx/sitio_internet/cfd/TimbreFiscalDigital/TimbreFiscalDigitalv11.xsd" Version="1.1" UUID="F2BC4B9D-88D8-4E18-9E85-4F1D151A3467" FechaTimbrado="2026-06-27T11:09:54" RfcProvCertif="SAT970701NN3" SelloCFD="j+hCfq3G1paFQVve5JmVWLrEWYJkwpU3kBMCHiSzRzHcomRqGY/yLZnVQnfJqLvGuzpmF3k0m5I1Y179UUxRRwrsuhne8SN8LaedZSFlQdDji5cBF4OneS9xWQ9mPui2Ybjbev7TqTDcgWuuVKUgiMDh3eB0ZZh7FwoGt3BH4z8FqbG00bCtbHgKNK4bYVz8yuV1NXGQHiQsenw/m7PZ0m1SsqlR/zLmuhQjo9y9dk9iMPDhvH4NVCupTv+JAJceisiavwR8hEilxtB7EjmCVe4WAVqetW8snDUnj70iakQkzLQV5h2DhMDR7PUSHJV0/TpcdH0HGwGEc4wnQj6Inw==" NoCertificadoSAT="00001000000705250068" SelloSAT="bxzAL89xQ5flji91+mEC2r8K015XEHDJCc6zyCV3XfYlahPQh8VNZbMw0q9c1m0OEeCPrckkyPx/uv9lc/g68rEfCXV/ps06kpH9ChrjJ/nXcDFA7OpZwe5gf62gNL965Tvd7M2gAanctLRHT1NS3XNOlyzOEQ0arneazrH2Ry8KhhcCiWS1nFIlz5LaNQMezdAEEfOfwQM6iqXLPRLjeKtYPgsi6D9ZJNLjFTog/IDEYHfpZxM5VI8QKBR9e+bALRD51qh4ovpnw645XHqof5rUiAci0mPb7tTsHWgE970KP0NTVU0LgyfdQtBr/geOG7xz2F/fHiGWOhxe6SsrFQ==" />
+  </cfdi:Complemento>
+</cfdi:Comprobante>

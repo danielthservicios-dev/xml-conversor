@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<cfdi:Comprobante xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sat.gob.mx/cfd/4 http://www.sat.gob.mx/sitio_internet/cfd/4/cfdv40.xsd" xmlns:cfdi="http://www.sat.gob.mx/cfd/4" Version="4.0" Serie="F" Folio="7976" Fecha="2026-06-10T08:26:21" Sello="FhQ8eWROd709m/228xCYNNAgoYdkTpzLtkKWGVI7Po1yoh9zHDday2q6AkgMDQODjMM+2Ngv1DgyTe/uwuqh2iHqX/gz4hDeGPf3OoelevejsJPd2qNrfEVGKi8iAPuYguLveuFmAhYtxRghCRRZ7gFEudNGNjuwiwUIKxUYge1ap5UvqveN/2U/g+q2WZd5uxf7yZ4Pu40EynyOawHo9JvOLzg43gK3SzyWvKCU6HMXH0g2Qy1yL0c0TDV6+GGtzATt9k1zHcsCnbtvGOMCGEkAGSfPyoZGIidmCzfIggVqE/wQlVeZG8G5cBwJbcB9wfQ/351spobH/2PHocSx/w==" FormaPago="01" NoCertificado="00001000000701271943" Certificado="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" SubTotal="1630.17" Moneda="MXN" Total="1891.00" TipoDeComprobante="I" Exportacion="01" MetodoPago="PUE" LugarExpedicion="91700">
+  <cfdi:Emisor Rfc="MJA060522F12" Nombre="MAYORISTA JAGUAR" RegimenFiscal="601" />
+  <cfdi:Receptor Rfc="GCT1906252L9" Nombre="GRUPO CONSTRUCTOR TOLMAR" DomicilioFiscalReceptor="91726" RegimenFiscalReceptor="601" UsoCFDI="G03" />
+  <cfdi:Conceptos>
+    <cfdi:Concepto ClaveProdServ="31162800" NoIdentificacion="7506240636137" Cantidad="1" ClaveUnidad="H87" Unidad="Pieza" Descripcion="Paraguas de 135 cm, Truper" ValorUnitario="211.206897" Importe="211.21" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="211.21" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="33.7936" />
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+    <cfdi:Concepto ClaveProdServ="46181600" NoIdentificacion="7501206691779" Cantidad="2" ClaveUnidad="PR" Unidad="Par" Descripcion="Botas jardineras # 24, Truper" ValorUnitario="154.310345" Importe="308.62" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="308.62" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="49.3792" />
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+    <cfdi:Concepto ClaveProdServ="46181600" NoIdentificacion="7501206691816" Cantidad="2" ClaveUnidad="PR" Unidad="Par" Descripcion="Botas jardineras # 28, Truper" ValorUnitario="154.310345" Importe="308.62" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="308.62" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="49.3792" />
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+    <cfdi:Concepto ClaveProdServ="46181500" NoIdentificacion="7506240609346" Cantidad="1" ClaveUnidad="H87" Unidad="Pieza" Descripcion="Conjunto impermeable doble capa amarillo con reflejante, G" ValorUnitario="418.103448" Importe="418.10" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="418.10" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="66.896" />
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+    <cfdi:Concepto ClaveProdServ="46181506" NoIdentificacion="7506240680116" Cantidad="1" ClaveUnidad="XKI" Unidad="Set" Descripcion="Conjunto impermeable triple capa, talla M, Truper Expert" ValorUnitario="383.62069" Importe="383.62" ObjetoImp="02">
+      <cfdi:Impuestos>
+        <cfdi:Traslados>
+          <cfdi:Traslado Base="383.62" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="61.3792" />
+        </cfdi:Traslados>
+      </cfdi:Impuestos>
+    </cfdi:Concepto>
+  </cfdi:Conceptos>
+  <cfdi:Impuestos TotalImpuestosTrasladados="260.83">
+    <cfdi:Traslados>
+      <cfdi:Traslado Base="1630.17" Impuesto="002" TipoFactor="Tasa" TasaOCuota="0.160000" Importe="260.83" />
+    </cfdi:Traslados>
+  </cfdi:Impuestos>
+<cfdi:Complemento><tfd:TimbreFiscalDigital xmlns:tfd="http://www.sat.gob.mx/TimbreFiscalDigital" xsi:schemaLocation="http://www.sat.gob.mx/TimbreFiscalDigital http://www.sat.gob.mx/sitio_internet/cfd/TimbreFiscalDigital/TimbreFiscalDigitalv11.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Version="1.1" UUID="258E72A8-8F97-BC44-BA41-7873E4DEC6AF" FechaTimbrado="2026-06-10T08:26:30" RfcProvCertif="SCD110105654" SelloCFD="FhQ8eWROd709m/228xCYNNAgoYdkTpzLtkKWGVI7Po1yoh9zHDday2q6AkgMDQODjMM+2Ngv1DgyTe/uwuqh2iHqX/gz4hDeGPf3OoelevejsJPd2qNrfEVGKi8iAPuYguLveuFmAhYtxRghCRRZ7gFEudNGNjuwiwUIKxUYge1ap5UvqveN/2U/g+q2WZd5uxf7yZ4Pu40EynyOawHo9JvOLzg43gK3SzyWvKCU6HMXH0g2Qy1yL0c0TDV6+GGtzATt9k1zHcsCnbtvGOMCGEkAGSfPyoZGIidmCzfIggVqE/wQlVeZG8G5cBwJbcB9wfQ/351spobH/2PHocSx/w==" NoCertificadoSAT="00001000000702501858" SelloSAT="gAx1ECLRLWpzZNYGIQeuCxiXsnU7g+VeNpGqpNw2/Ctd1VLp6KI6xQ/QhbenOSNnaJP2A9FMrYyM+7f+0JKQPiesq2KdoBrNhKl3PU8TT1bI6nCpn8Y2kUd1S4KPJPwBw+kDT2XzWa2Nw7UvumE2FyE7ltexgq5WtdIPlSCblRqiTifOenelzr/j27wAleJQMb19JuAGxgoyA+kE22RHwkQ4O7XSzmGyaDreZ5HxW0f+p9QUXDEnlc+MlQTafVu0T6AwKPvxg9W3L5hGi9XyQM45Y52tihKoYsa57D8Jf9SFrO818Cc/yXjIpVtPCEeYRtGJUdhp2oRdowCeezuGYA==" />
+</cfdi:Complemento></cfdi:Comprobante>

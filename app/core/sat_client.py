@@ -7,10 +7,9 @@ from playwright.sync_api import sync_playwright, Page, Browser, TimeoutError as 
 SAT_URL = "https://portalcfdi.facturaelectronica.sat.gob.mx/"
 MAX_RETRIES = 2
 
-
 class SATClient:
     def __init__(self, ruta_cer: str, ruta_key: str, password: str,
-                 headless: bool = False, log_fn=None):
+                headless: bool = False, log_fn=None):
         self.ruta_cer = ruta_cer
         self.ruta_key = ruta_key
         self.password = password
@@ -162,7 +161,7 @@ class SATClient:
                 return False
 
     def download_periodo(self, year: int, month: int, tipo: str = "emitidas",
-                         download_path: Optional[str] = None) -> dict:
+                        download_path: Optional[str] = None) -> dict:
         page = self._page
         if not page:
             return {"ok": False, "msg": "Navegador no inicializado"}
